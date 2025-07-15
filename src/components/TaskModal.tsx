@@ -220,15 +220,15 @@ export function TaskModal({
           <div className="space-y-2">
             <Label className="text-sm font-medium">Assignee</Label>
             <Select
-              value={formData.assigneeId || ''}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, assigneeId: value || null }))}
+              value={formData.assigneeId || 'unassigned'}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, assigneeId: value === 'unassigned' ? null : value }))}
               disabled={!canEdit('assigneeId')}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select assignee..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">
+                <SelectItem value="unassigned">
                   <span className="text-muted-foreground">Unassigned</span>
                 </SelectItem>
                 {availableUsers.map(user => (
