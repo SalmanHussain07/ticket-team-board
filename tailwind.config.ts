@@ -52,6 +52,26 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				status: {
+					todo: 'hsl(var(--status-todo))',
+					'todo-foreground': 'hsl(var(--status-todo-foreground))',
+					'in-progress': 'hsl(var(--status-in-progress))',
+					'in-progress-foreground': 'hsl(var(--status-in-progress-foreground))',
+					review: 'hsl(var(--status-review))',
+					'review-foreground': 'hsl(var(--status-review-foreground))',
+					done: 'hsl(var(--status-done))',
+					'done-foreground': 'hsl(var(--status-done-foreground))'
+				},
+				priority: {
+					low: 'hsl(var(--priority-low))',
+					'low-foreground': 'hsl(var(--priority-low-foreground))',
+					medium: 'hsl(var(--priority-medium))',
+					'medium-foreground': 'hsl(var(--priority-medium-foreground))',
+					high: 'hsl(var(--priority-high))',
+					'high-foreground': 'hsl(var(--priority-high-foreground))',
+					urgent: 'hsl(var(--priority-urgent))',
+					'urgent-foreground': 'hsl(var(--priority-urgent-foreground))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
