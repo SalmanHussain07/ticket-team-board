@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TaskModal } from "@/components/TaskModal";
 import { UserSelector } from "@/components/UserSelector";
+import { Reports } from "@/components/Reports";
 import { Task, TaskFormData, User } from "@/types/task";
 import { Plus, LayoutGrid, List, Users, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -227,7 +228,7 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="kanban" className="space-y-6">
           <div className="flex items-center justify-between">
-            <TabsList className="grid w-full max-w-[400px] grid-cols-3">
+            <TabsList className="grid w-full max-w-[500px] grid-cols-4">
               <TabsTrigger value="kanban" className="gap-2">
                 <LayoutGrid className="h-4 w-4" />
                 Kanban
@@ -239,6 +240,10 @@ const Index = () => {
               <TabsTrigger value="stats" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Statistics
+              </TabsTrigger>
+              <TabsTrigger value="reports" className="gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Reports
               </TabsTrigger>
             </TabsList>
             
@@ -371,6 +376,10 @@ const Index = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-6">
+            <Reports tasks={tasks} users={mockUsers} />
           </TabsContent>
         </Tabs>
       </main>
