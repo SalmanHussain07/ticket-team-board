@@ -1,14 +1,17 @@
 import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TaskModal } from "@/components/TaskModal";
+import { UserModal, UserFormData } from "@/components/UserModal";
 import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
+import { TaskCard } from "@/components/TaskCard";
 import { Task, TaskFormData, User } from "@/types/task";
-import { Plus, LayoutGrid, List, Users, BarChart3 } from "lucide-react";
+import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock data for demonstration
@@ -97,12 +100,16 @@ const mockTasks: Task[] = [
   }
 ];
 
-const Index = () => {
+export default function Index() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
-  const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]); // Default to manager
+  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const { toast } = useToast();
 
   const taskStats = useMemo(() => {
@@ -148,71 +155,149 @@ const Index = () => {
 
   const handleSaveTask = (taskData: TaskFormData) => {
     if (isCreatingTask) {
+      // Creating a new task
       const newTask: Task = {
-        id: `TASK-${String(tasks.length + 1).padStart(3, '0')}`,
+        id: `task-${Date.now()}`,
         name: taskData.name,
         description: taskData.description,
         status: taskData.status,
         priority: taskData.priority,
         reporter: currentUser,
-        assignee: taskData.assigneeId ? mockUsers.find(u => u.id === taskData.assigneeId) || null : null,
+        assignee: taskData.assigneeId ? users.find(u => u.id === taskData.assigneeId) || null : null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
       setTasks(prev => [...prev, newTask]);
       toast({
-        title: "Task Created",
-        description: `"${newTask.name}" has been created successfully.`
+        title: "Task created successfully",
+        description: `"${newTask.name}" has been created.`,
       });
     } else if (selectedTask) {
-      setTasks(prev => prev.map(task => 
-        task.id === selectedTask.id 
-          ? {
-              ...task,
-              name: taskData.name,
-              description: taskData.description,
-              status: taskData.status,
-              priority: taskData.priority,
-              assignee: taskData.assigneeId ? mockUsers.find(u => u.id === taskData.assigneeId) || null : null,
-              updatedAt: new Date()
-            }
-          : task
-      ));
+      // Editing existing task
+      const updatedTask: Task = {
+        ...selectedTask,
+        name: taskData.name,
+        description: taskData.description,
+        status: taskData.status,
+        priority: taskData.priority,
+        assignee: taskData.assigneeId ? users.find(u => u.id === taskData.assigneeId) || null : null,
+        updatedAt: new Date()
+      };
+      setTasks(prev => prev.map(task => task.id === selectedTask.id ? updatedTask : task));
       toast({
-        title: "Task Updated",
-        description: `"${selectedTask.name}" has been updated successfully.`
+        title: "Task updated successfully",
+        description: `"${updatedTask.name}" has been updated.`,
       });
     }
+    setIsTaskModalOpen(false);
+    setSelectedTask(null);
+    setIsCreatingTask(false);
+  };
+
+  const handleCreateUser = () => {
+    setSelectedUser(null);
+    setIsCreatingUser(true);
+    setIsUserModalOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setIsCreatingUser(false);
+    setIsUserModalOpen(true);
+  };
+
+  const handleDeleteUser = (user: User) => {
+    if (user.id === currentUser.id) {
+      toast({
+        title: "Cannot delete current user",
+        description: "You cannot delete the user you are currently logged in as.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setUsers(prev => prev.filter(u => u.id !== user.id));
+    // Remove user from tasks as assignee
+    setTasks(prev => prev.map(task => 
+      task.assignee?.id === user.id 
+        ? { ...task, assignee: null, updatedAt: new Date() }
+        : task
+    ));
+    toast({
+      title: "User deleted successfully",
+      description: `"${user.name}" has been removed.`,
+    });
+  };
+
+  const handleSaveUser = (userData: UserFormData) => {
+    if (isCreatingUser) {
+      // Creating a new user
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role
+      };
+      setUsers(prev => [...prev, newUser]);
+      toast({
+        title: "User created successfully",
+        description: `"${newUser.name}" has been created.`,
+      });
+    } else if (selectedUser) {
+      // Editing existing user
+      const updatedUser: User = {
+        ...selectedUser,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role
+      };
+      setUsers(prev => prev.map(user => user.id === selectedUser.id ? updatedUser : user));
+      
+      // Update current user if editing themselves
+      if (selectedUser.id === currentUser.id) {
+        setCurrentUser(updatedUser);
+      }
+      
+      // Update tasks that reference this user
+      setTasks(prev => prev.map(task => {
+        const updatedTask = { ...task };
+        if (task.reporter.id === selectedUser.id) {
+          updatedTask.reporter = updatedUser;
+        }
+        if (task.assignee?.id === selectedUser.id) {
+          updatedTask.assignee = updatedUser;
+        }
+        return updatedTask;
+      }));
+      
+      toast({
+        title: "User updated successfully",
+        description: `"${updatedUser.name}" has been updated.`,
+      });
+    }
+    setIsUserModalOpen(false);
+    setSelectedUser(null);
+    setIsCreatingUser(false);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+      <header className="border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <LayoutGrid className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-bold text-foreground">TaskBoard</h1>
-              </div>
-              <Badge variant="outline" className="text-xs">
-                Developer Team
-              </Badge>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold">Task Management</h1>
             </div>
-            
             <div className="flex items-center gap-4">
-              <div className="w-60">
-                <UserSelector
-                  users={mockUsers}
-                  selectedUserId={currentUser.id}
-                  onSelect={(userId) => {
-                    const user = mockUsers.find(u => u.id === userId);
-                    if (user) setCurrentUser(user);
-                  }}
-                />
-              </div>
-              
+              <UserSelector
+                users={users}
+                selectedUserId={currentUser.id}
+                onSelect={(userId) => {
+                  const user = users.find(u => u.id === userId);
+                  if (user) setCurrentUser(user);
+                }}
+              />
               {currentUser.role === 'manager' && (
                 <Button onClick={handleCreateTask} className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -224,85 +309,52 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="kanban" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList className="grid w-full max-w-[500px] grid-cols-4">
-              <TabsTrigger value="kanban" className="gap-2">
-                <LayoutGrid className="h-4 w-4" />
-                Kanban
-              </TabsTrigger>
-              <TabsTrigger value="list" className="gap-2">
-                <List className="h-4 w-4" />
-                List View
-              </TabsTrigger>
-              <TabsTrigger value="stats" className="gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Statistics
-              </TabsTrigger>
-              <TabsTrigger value="reports" className="gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Reports
-              </TabsTrigger>
-            </TabsList>
-            
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
-              <span>{taskStats.total} tasks • {taskStats.assigned} assigned</span>
-            </div>
-          </div>
+        <Tabs defaultValue="kanban" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="kanban">Kanban</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="stats">Stats</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+          </TabsList>
 
-          <TabsContent value="kanban" className="space-y-6">
-            <KanbanBoard
+          <TabsContent value="kanban" className="space-y-4">
+            <KanbanBoard 
               tasks={tasks}
-              onEditTask={handleEditTask}
               currentUser={currentUser}
+              onEditTask={handleEditTask}
             />
           </TabsContent>
 
           <TabsContent value="list" className="space-y-4">
-            <div className="grid gap-4">
-              {tasks.map(task => (
-                <Card key={task.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() => handleEditTask(task)}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold">{task.name}</h3>
-                          <Badge variant="outline" className="text-xs">{task.id}</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">{task.description}</p>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary">{task.status}</Badge>
-                          <Badge variant="outline">{task.priority}</Badge>
-                          {task.assignee && (
-                            <span className="text-sm">→ {task.assignee.name}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            <div className="space-y-4">
+              {tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onEdit={handleEditTask}
+                  canEdit={true}
+                />
               ))}
             </div>
           </TabsContent>
 
-          <TabsContent value="stats" className="space-y-6">
+          <TabsContent value="stats" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{taskStats.total}</div>
                 </CardContent>
               </Card>
-              
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Assigned</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{taskStats.assigned}</div>
@@ -311,19 +363,19 @@ const Index = () => {
                   </p>
                 </CardContent>
               </Card>
-              
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{taskStats.byStatus['in-progress'] || 0}</div>
                 </CardContent>
               </Card>
-              
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{taskStats.byStatus.done || 0}</div>
@@ -378,24 +430,96 @@ const Index = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="reports" className="space-y-6">
-            <Reports tasks={tasks} users={mockUsers} />
+          <TabsContent value="reports" className="space-y-4">
+            <Reports 
+              tasks={tasks}
+              users={users}
+            />
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">User Management</h2>
+              <Button onClick={handleCreateUser} className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Add User
+              </Button>
+            </div>
+            
+            <div className="grid gap-4">
+              {users.map(user => (
+                <Card key={user.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} />
+                          <AvatarFallback className="text-sm">
+                            {user.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-semibold">{user.name}</h3>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={user.role === 'manager' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
+                          {user.role}
+                        </Badge>
+                        {user.id === currentUser.id && (
+                          <Badge variant="secondary">Current</Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user)}
+                          disabled={user.id === currentUser.id}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
       </main>
 
-      {/* Task Modal */}
       <TaskModal
         task={selectedTask}
         isOpen={isTaskModalOpen}
-        onClose={() => setIsTaskModalOpen(false)}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          setSelectedTask(null);
+          setIsCreatingTask(false);
+        }}
         onSave={handleSaveTask}
         currentUser={currentUser}
-        availableUsers={mockUsers}
+        availableUsers={users}
         isCreating={isCreatingTask}
+      />
+
+      <UserModal
+        user={selectedUser}
+        isOpen={isUserModalOpen}
+        onClose={() => {
+          setIsUserModalOpen(false);
+          setSelectedUser(null);
+          setIsCreatingUser(false);
+        }}
+        onSave={handleSaveUser}
+        isCreating={isCreatingUser}
       />
     </div>
   );
-};
-
-export default Index;
+}
