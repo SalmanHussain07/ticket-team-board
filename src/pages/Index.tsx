@@ -10,7 +10,7 @@ import { UserModal, UserFormData } from "@/components/UserModal";
 import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
 import { TaskCard } from "@/components/TaskCard";
-import { Task, TaskFormData, User } from "@/types/task";
+import { Task, TaskFormData, User, Project } from "@/types/task";
 import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,6 +42,27 @@ const mockUsers: User[] = [
   }
 ];
 
+const mockProjects: Project[] = [
+  {
+    id: '1',
+    name: 'E-commerce Platform',
+    description: 'Main e-commerce platform development',
+    createdAt: new Date('2024-01-01')
+  },
+  {
+    id: '2',
+    name: 'Mobile App',
+    description: 'Mobile application for customers',
+    createdAt: new Date('2024-01-05')
+  },
+  {
+    id: '3',
+    name: 'Analytics Dashboard',
+    description: 'Internal analytics and reporting dashboard',
+    createdAt: new Date('2024-01-10')
+  }
+];
+
 const mockTasks: Task[] = [
   {
     id: 'TASK-001',
@@ -51,6 +72,7 @@ const mockTasks: Task[] = [
     priority: 'high',
     reporter: mockUsers[0],
     assignee: mockUsers[1],
+    project: mockProjects[0],
     createdAt: new Date('2024-01-10'),
     updatedAt: new Date('2024-01-12')
   },
@@ -62,6 +84,7 @@ const mockTasks: Task[] = [
     priority: 'medium',
     reporter: mockUsers[0],
     assignee: mockUsers[2],
+    project: mockProjects[2],
     createdAt: new Date('2024-01-11'),
     updatedAt: new Date('2024-01-11')
   },
@@ -73,6 +96,7 @@ const mockTasks: Task[] = [
     priority: 'urgent',
     reporter: mockUsers[1],
     assignee: mockUsers[3],
+    project: mockProjects[0],
     createdAt: new Date('2024-01-09'),
     updatedAt: new Date('2024-01-13')
   },
@@ -84,6 +108,7 @@ const mockTasks: Task[] = [
     priority: 'low',
     reporter: mockUsers[0],
     assignee: mockUsers[2],
+    project: mockProjects[1],
     createdAt: new Date('2024-01-08'),
     updatedAt: new Date('2024-01-10')
   },
@@ -95,6 +120,7 @@ const mockTasks: Task[] = [
     priority: 'medium',
     reporter: mockUsers[0],
     assignee: null,
+    project: mockProjects[0],
     createdAt: new Date('2024-01-13'),
     updatedAt: new Date('2024-01-13')
   }
@@ -103,6 +129,7 @@ const mockTasks: Task[] = [
 export default function Index() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [users, setUsers] = useState<User[]>(mockUsers);
+  const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -164,6 +191,7 @@ export default function Index() {
         priority: taskData.priority,
         reporter: currentUser,
         assignee: taskData.assigneeId ? users.find(u => u.id === taskData.assigneeId) || null : null,
+        project: projects.find(p => p.id === taskData.projectId) || projects[0],
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -181,6 +209,7 @@ export default function Index() {
         status: taskData.status,
         priority: taskData.priority,
         assignee: taskData.assigneeId ? users.find(u => u.id === taskData.assigneeId) || null : null,
+        project: projects.find(p => p.id === taskData.projectId) || selectedTask.project,
         updatedAt: new Date()
       };
       setTasks(prev => prev.map(task => task.id === selectedTask.id ? updatedTask : task));
@@ -506,6 +535,7 @@ export default function Index() {
         onSave={handleSaveTask}
         currentUser={currentUser}
         availableUsers={users}
+        availableProjects={projects}
         isCreating={isCreatingTask}
       />
 

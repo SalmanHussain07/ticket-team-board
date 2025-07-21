@@ -11,6 +11,13 @@ export interface User {
   email: string;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: Date;
+}
+
 export interface Task {
   id: string;
   name: string;
@@ -19,6 +26,7 @@ export interface Task {
   priority: TaskPriority;
   reporter: User;
   assignee: User | null;
+  project: Project;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,4 +37,5 @@ export interface TaskFormData {
   status: TaskStatus;
   priority: TaskPriority;
   assigneeId: string | null;
+  projectId: string;
 }

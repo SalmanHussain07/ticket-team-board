@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Task, TaskFormData, TaskStatus, TaskPriority, User, UserRole } from "@/types/task";
+import { Task, TaskFormData, TaskStatus, TaskPriority, User, UserRole, Project } from "@/types/task";
 import { Save, X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ interface TaskModalProps {
   onSave: (taskData: TaskFormData) => void;
   currentUser: User;
   availableUsers: User[];
+  availableProjects: Project[];
   isCreating?: boolean;
 }
 
@@ -42,6 +43,7 @@ export function TaskModal({
   onSave, 
   currentUser, 
   availableUsers,
+  availableProjects,
   isCreating = false 
 }: TaskModalProps) {
   const [formData, setFormData] = useState<TaskFormData>({
@@ -49,7 +51,8 @@ export function TaskModal({
     description: '',
     status: 'todo',
     priority: 'medium',
-    assigneeId: null
+    assigneeId: null,
+    projectId: availableProjects[0]?.id || ''
   });
 
   const [errors, setErrors] = useState<Partial<TaskFormData>>({});
@@ -61,7 +64,8 @@ export function TaskModal({
         description: task.description,
         status: task.status,
         priority: task.priority,
-        assigneeId: task.assignee?.id || null
+        assigneeId: task.assignee?.id || null,
+        projectId: task.project.id
       });
     } else if (isCreating) {
       setFormData({
@@ -69,7 +73,8 @@ export function TaskModal({
         description: '',
         status: 'todo',
         priority: 'medium',
-        assigneeId: null
+        assigneeId: null,
+        projectId: availableProjects[0]?.id || ''
       });
     }
     setErrors({});
@@ -161,6 +166,30 @@ export function TaskModal({
                 {errors.description}
               </p>
             )}
+          </div>
+
+          {/* Project */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Project *</Label>
+            <Select
+              value={formData.projectId}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, projectId: value }))}
+              disabled={!canEdit('projectId')}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select project..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableProjects.map(project => (
+                  <SelectItem key={project.id} value={project.id}>
+                    <div className="space-y-1">
+                      <div className="font-medium">{project.name}</div>
+                      <div className="text-sm text-muted-foreground">{project.description}</div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
