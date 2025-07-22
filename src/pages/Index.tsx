@@ -7,11 +7,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TaskModal } from "@/components/TaskModal";
 import { UserModal, UserFormData } from "@/components/UserModal";
+import { ProjectModal, ProjectFormData } from "@/components/ProjectModal";
 import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
 import { TaskCard } from "@/components/TaskCard";
 import { Task, TaskFormData, User, Project } from "@/types/task";
-import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2 } from "lucide-react";
+import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock data for demonstration
@@ -133,10 +134,13 @@ export default function Index() {
   const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
   const { toast } = useToast();
 
   const taskStats = useMemo(() => {
@@ -309,6 +313,77 @@ export default function Index() {
     setIsCreatingUser(false);
   };
 
+  const handleCreateProject = () => {
+    setSelectedProject(null);
+    setIsCreatingProject(true);
+    setIsProjectModalOpen(true);
+  };
+
+  const handleEditProject = (project: Project) => {
+    setSelectedProject(project);
+    setIsCreatingProject(false);
+    setIsProjectModalOpen(true);
+  };
+
+  const handleDeleteProject = (project: Project) => {
+    // Check if project has tasks
+    const projectTasks = tasks.filter(task => task.project.id === project.id);
+    if (projectTasks.length > 0) {
+      toast({
+        title: "Cannot delete project",
+        description: `This project has ${projectTasks.length} task(s). Please reassign or delete them first.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setProjects(prev => prev.filter(p => p.id !== project.id));
+    toast({
+      title: "Project deleted successfully",
+      description: `"${project.name}" has been removed.`,
+    });
+  };
+
+  const handleSaveProject = (projectData: ProjectFormData) => {
+    if (isCreatingProject) {
+      // Creating a new project
+      const newProject: Project = {
+        id: `project-${Date.now()}`,
+        name: projectData.name,
+        description: projectData.description,
+        createdAt: new Date()
+      };
+      setProjects(prev => [...prev, newProject]);
+      toast({
+        title: "Project created successfully",
+        description: `"${newProject.name}" has been created.`,
+      });
+    } else if (selectedProject) {
+      // Editing existing project
+      const updatedProject: Project = {
+        ...selectedProject,
+        name: projectData.name,
+        description: projectData.description
+      };
+      setProjects(prev => prev.map(project => project.id === selectedProject.id ? updatedProject : project));
+      
+      // Update tasks that reference this project
+      setTasks(prev => prev.map(task => 
+        task.project.id === selectedProject.id 
+          ? { ...task, project: updatedProject, updatedAt: new Date() }
+          : task
+      ));
+      
+      toast({
+        title: "Project updated successfully",
+        description: `"${updatedProject.name}" has been updated.`,
+      });
+    }
+    setIsProjectModalOpen(false);
+    setSelectedProject(null);
+    setIsCreatingProject(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -340,12 +415,13 @@ export default function Index() {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="kanban" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="list">List</TabsTrigger>
             <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="projects">Projects</TabsTrigger>
           </TabsList>
 
           <TabsContent value="kanban" className="space-y-4">
@@ -521,6 +597,56 @@ export default function Index() {
               ))}
             </div>
           </TabsContent>
+
+          <TabsContent value="projects" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Project Management</h2>
+              <Button onClick={handleCreateProject} className="gap-2">
+                <FolderPlus className="h-4 w-4" />
+                Add Project
+              </Button>
+            </div>
+            
+            <div className="grid gap-4">
+              {projects.map(project => (
+                <Card key={project.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-medium text-lg">{project.name}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
+                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                              <span>Created: {project.createdAt.toLocaleDateString()}</span>
+                              <span>Tasks: {tasks.filter(t => t.project.id === project.id).length}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditProject(project)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteProject(project)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -549,6 +675,18 @@ export default function Index() {
         }}
         onSave={handleSaveUser}
         isCreating={isCreatingUser}
+      />
+
+      <ProjectModal
+        project={selectedProject}
+        isOpen={isProjectModalOpen}
+        onClose={() => {
+          setIsProjectModalOpen(false);
+          setSelectedProject(null);
+          setIsCreatingProject(false);
+        }}
+        onSave={handleSaveProject}
+        isCreating={isCreatingProject}
       />
     </div>
   );
