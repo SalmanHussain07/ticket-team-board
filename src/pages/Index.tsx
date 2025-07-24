@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TaskModal } from "@/components/TaskModal";
 import { UserModal, UserFormData } from "@/components/UserModal";
@@ -12,7 +14,7 @@ import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
 import { TaskCard } from "@/components/TaskCard";
 import { Task, TaskFormData, User, Project } from "@/types/task";
-import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus, LogOut } from "lucide-react";
+import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus, LogOut, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock data for demonstration
@@ -141,6 +143,9 @@ export default function Index() {
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [taskSearch, setTaskSearch] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [projectSearch, setProjectSearch] = useState("");
   const { toast } = useToast();
 
   const taskStats = useMemo(() => {
@@ -163,6 +168,29 @@ export default function Index() {
       unassigned: tasks.filter(t => !t.assignee).length
     };
   }, [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => 
+      task.name.toLowerCase().includes(taskSearch.toLowerCase()) ||
+      task.description.toLowerCase().includes(taskSearch.toLowerCase()) ||
+      task.id.toLowerCase().includes(taskSearch.toLowerCase())
+    );
+  }, [tasks, taskSearch]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => 
+      user.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+      user.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+      user.role.toLowerCase().includes(userSearch.toLowerCase())
+    );
+  }, [users, userSearch]);
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter(project => 
+      project.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
+      project.description.toLowerCase().includes(projectSearch.toLowerCase())
+    );
+  }, [projects, projectSearch]);
 
   const handleCreateTask = () => {
     if (currentUser.role !== 'manager') {
@@ -262,6 +290,10 @@ export default function Index() {
     });
   };
 
+  const confirmDeleteUser = (user: User) => {
+    handleDeleteUser(user);
+  };
+
   const handleSaveUser = (userData: UserFormData) => {
     if (isCreatingUser) {
       // Creating a new user
@@ -342,6 +374,10 @@ export default function Index() {
       title: "Project deleted successfully",
       description: `"${project.name}" has been removed.`,
     });
+  };
+
+  const confirmDeleteProject = (project: Project) => {
+    handleDeleteProject(project);
   };
 
   const handleSaveProject = (projectData: ProjectFormData) => {
@@ -442,8 +478,17 @@ export default function Index() {
           </TabsContent>
 
           <TabsContent value="list" className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tasks..."
+                value={taskSearch}
+                onChange={(e) => setTaskSearch(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
             <div className="space-y-4">
-              {tasks.map((task) => (
+              {filteredTasks.map((task) => (
                 <TaskCard
                   key={task.id}
                   task={task}
@@ -560,8 +605,18 @@ export default function Index() {
               </Button>
             </div>
             
+            <div className="flex items-center gap-2 mb-4">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            
             <div className="grid gap-4">
-              {users.map(user => (
+              {filteredUsers.map(user => (
                 <Card key={user.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -591,14 +646,31 @@ export default function Index() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user)}
-                          disabled={user.id === currentUser.id}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={user.id === currentUser.id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the user "{user.name}" and remove them from all assigned tasks.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => confirmDeleteUser(user)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </CardContent>
@@ -616,8 +688,18 @@ export default function Index() {
               </Button>
             </div>
             
+            <div className="flex items-center gap-2 mb-4">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search projects..."
+                value={projectSearch}
+                onChange={(e) => setProjectSearch(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            
             <div className="grid gap-4">
-              {projects.map(project => (
+              {filteredProjects.map(project => (
                 <Card key={project.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -639,14 +721,34 @@ export default function Index() {
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteProject(project)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the project "{project.name}". {tasks.filter(t => t.project.id === project.id).length > 0 ? 'This project has tasks assigned to it and cannot be deleted.' : ''}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => confirmDeleteProject(project)}
+                                    disabled={tasks.filter(t => t.project.id === project.id).length > 0}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       </div>
