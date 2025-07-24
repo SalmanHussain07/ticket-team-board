@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { TrendingUp, Shield, Users, BarChart3 } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,49 +17,117 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-elevated">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
-          <CardDescription className="text-center">
-            Enter your email and password to access your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+        {/* Left side - Branding and features */}
+        <div className="hidden lg:block space-y-8">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <TrendingUp className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">Task Management</h1>
+                <p className="text-muted-foreground">Professional project management solution</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full">
-              Sign In
-            </Button>
-          </form>
-          <div className="mt-4 text-center">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-              Back to Dashboard
-            </Link>
           </div>
-        </CardContent>
-      </Card>
+          
+          <div className="grid gap-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 rounded-md bg-status-in-progress/10 border border-status-in-progress/20">
+                <BarChart3 className="h-5 w-5 text-status-in-progress" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Advanced Analytics</h3>
+                <p className="text-sm text-muted-foreground">Track project progress with detailed reports and insights</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-4">
+              <div className="p-2 rounded-md bg-status-review/10 border border-status-review/20">
+                <Users className="h-5 w-5 text-status-review" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Team Collaboration</h3>
+                <p className="text-sm text-muted-foreground">Seamlessly work together with your team members</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-4">
+              <div className="p-2 rounded-md bg-status-done/10 border border-status-done/20">
+                <Shield className="h-5 w-5 text-status-done" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Secure & Reliable</h3>
+                <p className="text-sm text-muted-foreground">Enterprise-grade security for your sensitive data</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Right side - Login form */}
+        <div className="flex items-center justify-center">
+          <Card className="w-full max-w-md shadow-elevated border-border/50 bg-card/95 backdrop-blur-sm">
+            <CardHeader className="space-y-1 text-center">
+              <div className="flex justify-center mb-4 lg:hidden">
+                <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <TrendingUp className="h-8 w-8 text-primary" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+              <CardDescription>
+                Sign in to your account to continue managing your projects
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your work email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-11"
+                  />
+                </div>
+                <Button type="submit" className="w-full h-11 font-medium">
+                  Sign In to Dashboard
+                </Button>
+              </form>
+              
+              <div className="mt-6 text-center space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  Forgot your password? <a href="#" className="text-primary hover:underline">Reset here</a>
+                </div>
+                <div className="border-t pt-4">
+                  <Link 
+                    to="/" 
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    ← Back to Dashboard
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
