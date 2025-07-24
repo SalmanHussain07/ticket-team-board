@@ -12,7 +12,7 @@ import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
 import { TaskCard } from "@/components/TaskCard";
 import { Task, TaskFormData, User, Project } from "@/types/task";
-import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus } from "lucide-react";
+import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock data for demonstration
@@ -408,6 +408,15 @@ export default function Index() {
                   New Task
                 </Button>
               )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => window.location.href = '/login'}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
             </div>
           </div>
         </div>
