@@ -17,9 +17,10 @@ interface ProjectModalProps {
   onClose: () => void;
   onSave: (projectData: ProjectFormData) => void;
   isCreating?: boolean;
+  isSaving?: boolean;
 }
 
-export function ProjectModal({ project, isOpen, onClose, onSave, isCreating }: ProjectModalProps) {
+export function ProjectModal({ project, isOpen, onClose, onSave, isCreating, isSaving = false }: ProjectModalProps) {
   const [formData, setFormData] = useState<ProjectFormData>({
     name: '',
     description: ''
@@ -103,11 +104,18 @@ export function ProjectModal({ project, isOpen, onClose, onSave, isCreating }: P
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>
-            {isCreating ? 'Create Project' : 'Save Changes'}
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current" />
+                Saving...
+              </>
+            ) : (
+              isCreating ? 'Create Project' : 'Save Changes'
+            )}
           </Button>
         </div>
       </DialogContent>

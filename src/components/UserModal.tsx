@@ -22,6 +22,7 @@ interface UserModalProps {
   onClose: () => void;
   onSave: (userData: UserFormData) => void;
   isCreating?: boolean;
+  isSaving?: boolean;
 }
 
 const roleOptions: { value: UserRole; label: string }[] = [
@@ -34,7 +35,8 @@ export function UserModal({
   isOpen, 
   onClose, 
   onSave, 
-  isCreating = false 
+  isCreating = false,
+  isSaving = false
 }: UserModalProps) {
   const [formData, setFormData] = useState<UserFormData>({
     name: '',
@@ -188,13 +190,17 @@ export function UserModal({
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={Object.keys(errors).length > 0}>
-            <Save className="w-4 h-4 mr-2" />
-            {isCreating ? 'Create User' : 'Save Changes'}
+          <Button onClick={handleSave} disabled={Object.keys(errors).length > 0 || isSaving}>
+            {isSaving ? (
+              <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            {isSaving ? 'Saving...' : (isCreating ? 'Create User' : 'Save Changes')}
           </Button>
         </div>
       </DialogContent>

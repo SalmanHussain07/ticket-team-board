@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TaskModal } from "@/components/TaskModal";
@@ -130,10 +131,10 @@ const mockTasks: Task[] = [
 ];
 
 export default function Index() {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
-  const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -146,7 +147,28 @@ export default function Index() {
   const [taskSearch, setTaskSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [savingTask, setSavingTask] = useState(false);
+  const [savingUser, setSavingUser] = useState(false);
+  const [savingProject, setSavingProject] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [deletingProject, setDeletingProject] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Simulate initial data loading
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setTasks(mockTasks);
+      setUsers(mockUsers);
+      setProjects(mockProjects);
+      setCurrentUser(mockUsers[0]);
+      setIsLoading(false);
+    };
+    loadData();
+  }, []);
 
   const taskStats = useMemo(() => {
     const total = tasks.length;
@@ -212,47 +234,57 @@ export default function Index() {
     setIsTaskModalOpen(true);
   };
 
-  const handleSaveTask = (taskData: TaskFormData) => {
-    if (isCreatingTask) {
-      // Creating a new task
-      const newTask: Task = {
-        id: `task-${Date.now()}`,
-        name: taskData.name,
-        description: taskData.description,
-        status: taskData.status,
-        priority: taskData.priority,
-        reporter: currentUser,
-        assignee: taskData.assigneeId ? users.find(u => u.id === taskData.assigneeId) || null : null,
-        project: projects.find(p => p.id === taskData.projectId) || projects[0],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      setTasks(prev => [...prev, newTask]);
-      toast({
-        title: "Task created successfully",
-        description: `"${newTask.name}" has been created.`,
-      });
-    } else if (selectedTask) {
-      // Editing existing task
-      const updatedTask: Task = {
-        ...selectedTask,
-        name: taskData.name,
-        description: taskData.description,
-        status: taskData.status,
-        priority: taskData.priority,
-        assignee: taskData.assigneeId ? users.find(u => u.id === taskData.assigneeId) || null : null,
-        project: projects.find(p => p.id === taskData.projectId) || selectedTask.project,
-        updatedAt: new Date()
-      };
-      setTasks(prev => prev.map(task => task.id === selectedTask.id ? updatedTask : task));
-      toast({
-        title: "Task updated successfully",
-        description: `"${updatedTask.name}" has been updated.`,
-      });
+  const handleSaveTask = async (taskData: TaskFormData) => {
+    if (!currentUser) return;
+    
+    setSavingTask(true);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      if (isCreatingTask) {
+        // Creating a new task
+        const newTask: Task = {
+          id: `task-${Date.now()}`,
+          name: taskData.name,
+          description: taskData.description,
+          status: taskData.status,
+          priority: taskData.priority,
+          reporter: currentUser,
+          assignee: taskData.assigneeId ? users.find(u => u.id === taskData.assigneeId) || null : null,
+          project: projects.find(p => p.id === taskData.projectId) || projects[0],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        setTasks(prev => [...prev, newTask]);
+        toast({
+          title: "Task created successfully",
+          description: `"${newTask.name}" has been created.`,
+        });
+      } else if (selectedTask) {
+        // Editing existing task
+        const updatedTask: Task = {
+          ...selectedTask,
+          name: taskData.name,
+          description: taskData.description,
+          status: taskData.status,
+          priority: taskData.priority,
+          assignee: taskData.assigneeId ? users.find(u => u.id === taskData.assigneeId) || null : null,
+          project: projects.find(p => p.id === taskData.projectId) || selectedTask.project,
+          updatedAt: new Date()
+        };
+        setTasks(prev => prev.map(task => task.id === selectedTask.id ? updatedTask : task));
+        toast({
+          title: "Task updated successfully",
+          description: `"${updatedTask.name}" has been updated.`,
+        });
+      }
+    } finally {
+      setSavingTask(false);
+      setIsTaskModalOpen(false);
+      setSelectedTask(null);
+      setIsCreatingTask(false);
     }
-    setIsTaskModalOpen(false);
-    setSelectedTask(null);
-    setIsCreatingTask(false);
   };
 
   const handleCreateUser = () => {
@@ -267,8 +299,8 @@ export default function Index() {
     setIsUserModalOpen(true);
   };
 
-  const handleDeleteUser = (user: User) => {
-    if (user.id === currentUser.id) {
+  const handleDeleteUser = async (user: User) => {
+    if (!currentUser || user.id === currentUser.id) {
       toast({
         title: "Cannot delete current user",
         description: "You cannot delete the user you are currently logged in as.",
@@ -277,72 +309,90 @@ export default function Index() {
       return;
     }
     
-    setUsers(prev => prev.filter(u => u.id !== user.id));
-    // Remove user from tasks as assignee
-    setTasks(prev => prev.map(task => 
-      task.assignee?.id === user.id 
-        ? { ...task, assignee: null, updatedAt: new Date() }
-        : task
-    ));
-    toast({
-      title: "User deleted successfully",
-      description: `"${user.name}" has been removed.`,
-    });
+    setDeletingUser(user.id);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      // Remove user from tasks as assignee
+      setTasks(prev => prev.map(task => 
+        task.assignee?.id === user.id 
+          ? { ...task, assignee: null, updatedAt: new Date() }
+          : task
+      ));
+      toast({
+        title: "User deleted successfully",
+        description: `"${user.name}" has been removed.`,
+      });
+    } finally {
+      setDeletingUser(null);
+    }
   };
 
   const confirmDeleteUser = (user: User) => {
     handleDeleteUser(user);
   };
 
-  const handleSaveUser = (userData: UserFormData) => {
-    if (isCreatingUser) {
-      // Creating a new user
-      const newUser: User = {
-        id: `user-${Date.now()}`,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role
-      };
-      setUsers(prev => [...prev, newUser]);
-      toast({
-        title: "User created successfully",
-        description: `"${newUser.name}" has been created.`,
-      });
-    } else if (selectedUser) {
-      // Editing existing user
-      const updatedUser: User = {
-        ...selectedUser,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role
-      };
-      setUsers(prev => prev.map(user => user.id === selectedUser.id ? updatedUser : user));
+  const handleSaveUser = async (userData: UserFormData) => {
+    if (!currentUser) return;
+    
+    setSavingUser(true);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Update current user if editing themselves
-      if (selectedUser.id === currentUser.id) {
-        setCurrentUser(updatedUser);
+      if (isCreatingUser) {
+        // Creating a new user
+        const newUser: User = {
+          id: `user-${Date.now()}`,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role
+        };
+        setUsers(prev => [...prev, newUser]);
+        toast({
+          title: "User created successfully",
+          description: `"${newUser.name}" has been created.`,
+        });
+      } else if (selectedUser) {
+        // Editing existing user
+        const updatedUser: User = {
+          ...selectedUser,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role
+        };
+        setUsers(prev => prev.map(user => user.id === selectedUser.id ? updatedUser : user));
+        
+        // Update current user if editing themselves
+        if (selectedUser.id === currentUser.id) {
+          setCurrentUser(updatedUser);
+        }
+        
+        // Update tasks that reference this user
+        setTasks(prev => prev.map(task => {
+          const updatedTask = { ...task };
+          if (task.reporter.id === selectedUser.id) {
+            updatedTask.reporter = updatedUser;
+          }
+          if (task.assignee?.id === selectedUser.id) {
+            updatedTask.assignee = updatedUser;
+          }
+          return updatedTask;
+        }));
+        
+        toast({
+          title: "User updated successfully",
+          description: `"${updatedUser.name}" has been updated.`,
+        });
       }
-      
-      // Update tasks that reference this user
-      setTasks(prev => prev.map(task => {
-        const updatedTask = { ...task };
-        if (task.reporter.id === selectedUser.id) {
-          updatedTask.reporter = updatedUser;
-        }
-        if (task.assignee?.id === selectedUser.id) {
-          updatedTask.assignee = updatedUser;
-        }
-        return updatedTask;
-      }));
-      
-      toast({
-        title: "User updated successfully",
-        description: `"${updatedUser.name}" has been updated.`,
-      });
+    } finally {
+      setSavingUser(false);
+      setIsUserModalOpen(false);
+      setSelectedUser(null);
+      setIsCreatingUser(false);
     }
-    setIsUserModalOpen(false);
-    setSelectedUser(null);
-    setIsCreatingUser(false);
   };
 
   const handleCreateProject = () => {
@@ -357,7 +407,7 @@ export default function Index() {
     setIsProjectModalOpen(true);
   };
 
-  const handleDeleteProject = (project: Project) => {
+  const handleDeleteProject = async (project: Project) => {
     // Check if project has tasks
     const projectTasks = tasks.filter(task => task.project.id === project.id);
     if (projectTasks.length > 0) {
@@ -369,56 +419,109 @@ export default function Index() {
       return;
     }
     
-    setProjects(prev => prev.filter(p => p.id !== project.id));
-    toast({
-      title: "Project deleted successfully",
-      description: `"${project.name}" has been removed.`,
-    });
+    setDeletingProject(project.id);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      setProjects(prev => prev.filter(p => p.id !== project.id));
+      toast({
+        title: "Project deleted successfully",
+        description: `"${project.name}" has been removed.`,
+      });
+    } finally {
+      setDeletingProject(null);
+    }
   };
 
   const confirmDeleteProject = (project: Project) => {
     handleDeleteProject(project);
   };
 
-  const handleSaveProject = (projectData: ProjectFormData) => {
-    if (isCreatingProject) {
-      // Creating a new project
-      const newProject: Project = {
-        id: `project-${Date.now()}`,
-        name: projectData.name,
-        description: projectData.description,
-        createdAt: new Date()
-      };
-      setProjects(prev => [...prev, newProject]);
-      toast({
-        title: "Project created successfully",
-        description: `"${newProject.name}" has been created.`,
-      });
-    } else if (selectedProject) {
-      // Editing existing project
-      const updatedProject: Project = {
-        ...selectedProject,
-        name: projectData.name,
-        description: projectData.description
-      };
-      setProjects(prev => prev.map(project => project.id === selectedProject.id ? updatedProject : project));
+  const handleSaveProject = async (projectData: ProjectFormData) => {
+    setSavingProject(true);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Update tasks that reference this project
-      setTasks(prev => prev.map(task => 
-        task.project.id === selectedProject.id 
-          ? { ...task, project: updatedProject, updatedAt: new Date() }
-          : task
-      ));
-      
-      toast({
-        title: "Project updated successfully",
-        description: `"${updatedProject.name}" has been updated.`,
-      });
+      if (isCreatingProject) {
+        // Creating a new project
+        const newProject: Project = {
+          id: `project-${Date.now()}`,
+          name: projectData.name,
+          description: projectData.description,
+          createdAt: new Date()
+        };
+        setProjects(prev => [...prev, newProject]);
+        toast({
+          title: "Project created successfully",
+          description: `"${newProject.name}" has been created.`,
+        });
+      } else if (selectedProject) {
+        // Editing existing project
+        const updatedProject: Project = {
+          ...selectedProject,
+          name: projectData.name,
+          description: projectData.description
+        };
+        setProjects(prev => prev.map(project => project.id === selectedProject.id ? updatedProject : project));
+        
+        // Update tasks that reference this project
+        setTasks(prev => prev.map(task => 
+          task.project.id === selectedProject.id 
+            ? { ...task, project: updatedProject, updatedAt: new Date() }
+            : task
+        ));
+        
+        toast({
+          title: "Project updated successfully",
+          description: `"${updatedProject.name}" has been updated.`,
+        });
+      }
+    } finally {
+      setSavingProject(false);
+      setIsProjectModalOpen(false);
+      setSelectedProject(null);
+      setIsCreatingProject(false);
     }
-    setIsProjectModalOpen(false);
-    setSelectedProject(null);
-    setIsCreatingProject(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-6 w-6 text-primary" />
+                <h1 className="text-xl font-bold">Task Management</h1>
+              </div>
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-8 w-32" />
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-6">
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
+            </div>
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-32" />
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -430,15 +533,17 @@ export default function Index() {
               <h1 className="text-xl font-bold">Task Management</h1>
             </div>
             <div className="flex items-center gap-4">
-              <UserSelector
-                users={users}
-                selectedUserId={currentUser.id}
-                onSelect={(userId) => {
-                  const user = users.find(u => u.id === userId);
-                  if (user) setCurrentUser(user);
-                }}
-              />
-              {currentUser.role === 'manager' && (
+              {currentUser && (
+                <UserSelector
+                  users={users}
+                  selectedUserId={currentUser.id}
+                  onSelect={(userId) => {
+                    const user = users.find(u => u.id === userId);
+                    if (user) setCurrentUser(user);
+                  }}
+                />
+              )}
+              {currentUser?.role === 'manager' && (
                 <Button onClick={handleCreateTask} className="gap-2">
                   <Plus className="h-4 w-4" />
                   New Task
@@ -488,14 +593,20 @@ export default function Index() {
               />
             </div>
             <div className="space-y-4">
-              {filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={handleEditTask}
-                  canEdit={true}
-                />
-              ))}
+              {filteredTasks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {taskSearch ? 'No tasks found matching your search.' : 'No tasks available.'}
+                </div>
+              ) : (
+                filteredTasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={handleEditTask}
+                    canEdit={true}
+                  />
+                ))
+              )}
             </div>
           </TabsContent>
 
@@ -616,66 +727,77 @@ export default function Index() {
             </div>
             
             <div className="grid gap-4">
-              {filteredUsers.map(user => (
-                <Card key={user.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} />
-                          <AvatarFallback className="text-sm">
-                            {user.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold">{user.name}</h3>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
+              {filteredUsers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {userSearch ? 'No users found matching your search.' : 'No users available.'}
+                </div>
+              ) : (
+                filteredUsers.map(user => (
+                  <Card key={user.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} />
+                            <AvatarFallback className="text-sm">
+                              {user.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="font-semibold">{user.name}</h3>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={user.role === 'manager' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
+                            {user.role}
+                          </Badge>
+                          {currentUser && user.id === currentUser.id && (
+                            <Badge variant="secondary">Current</Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditUser(user)}
+                            disabled={deletingUser === user.id}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={currentUser && user.id === currentUser.id || deletingUser === user.id}
+                              >
+                                {deletingUser === user.id ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently delete the user "{user.name}" and remove them from all assigned tasks.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => confirmDeleteUser(user)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={user.role === 'manager' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
-                          {user.role}
-                        </Badge>
-                        {user.id === currentUser.id && (
-                          <Badge variant="secondary">Current</Badge>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditUser(user)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={user.id === currentUser.id}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the user "{user.name}" and remove them from all assigned tasks.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => confirmDeleteUser(user)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
 
@@ -699,105 +821,128 @@ export default function Index() {
             </div>
             
             <div className="grid gap-4">
-              {filteredProjects.map(project => (
-                <Card key={project.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-medium text-lg">{project.name}</h3>
-                            <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
-                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                              <span>Created: {project.createdAt.toLocaleDateString()}</span>
-                              <span>Tasks: {tasks.filter(t => t.project.id === project.id).length}</span>
+              {filteredProjects.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {projectSearch ? 'No projects found matching your search.' : 'No projects available.'}
+                </div>
+              ) : (
+                filteredProjects.map(project => (
+                  <Card key={project.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-medium text-lg">{project.name}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
+                              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                <span>Created: {project.createdAt.toLocaleDateString()}</span>
+                                <span>Tasks: {tasks.filter(t => t.project.id === project.id).length}</span>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditProject(project)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the project "{project.name}". {tasks.filter(t => t.project.id === project.id).length > 0 ? 'This project has tasks assigned to it and cannot be deleted.' : ''}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => confirmDeleteProject(project)}
-                                    disabled={tasks.filter(t => t.project.id === project.id).length > 0}
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditProject(project)}
+                                disabled={deletingProject === project.id}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive"
+                                    disabled={deletingProject === project.id}
                                   >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                                    {deletingProject === project.id ? (
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete the project "{project.name}". {tasks.filter(t => t.project.id === project.id).length > 0 ? 'This project has tasks assigned to it and cannot be deleted.' : ''}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => confirmDeleteProject(project)}
+                                      disabled={tasks.filter(t => t.project.id === project.id).length > 0}
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </main>
 
-      <TaskModal
-        task={selectedTask}
-        isOpen={isTaskModalOpen}
-        onClose={() => {
-          setIsTaskModalOpen(false);
-          setSelectedTask(null);
-          setIsCreatingTask(false);
-        }}
-        onSave={handleSaveTask}
-        currentUser={currentUser}
-        availableUsers={users}
-        availableProjects={projects}
-        isCreating={isCreatingTask}
-      />
+      {currentUser && (
+        <TaskModal
+          task={selectedTask}
+          isOpen={isTaskModalOpen}
+          onClose={() => {
+            if (!savingTask) {
+              setIsTaskModalOpen(false);
+              setSelectedTask(null);
+              setIsCreatingTask(false);
+            }
+          }}
+          onSave={handleSaveTask}
+          currentUser={currentUser}
+          availableUsers={users}
+          availableProjects={projects}
+          isCreating={isCreatingTask}
+          isSaving={savingTask}
+        />
+      )}
 
       <UserModal
         user={selectedUser}
         isOpen={isUserModalOpen}
         onClose={() => {
-          setIsUserModalOpen(false);
-          setSelectedUser(null);
-          setIsCreatingUser(false);
+          if (!savingUser) {
+            setIsUserModalOpen(false);
+            setSelectedUser(null);
+            setIsCreatingUser(false);
+          }
         }}
         onSave={handleSaveUser}
         isCreating={isCreatingUser}
+        isSaving={savingUser}
       />
 
       <ProjectModal
         project={selectedProject}
         isOpen={isProjectModalOpen}
         onClose={() => {
-          setIsProjectModalOpen(false);
-          setSelectedProject(null);
-          setIsCreatingProject(false);
+          if (!savingProject) {
+            setIsProjectModalOpen(false);
+            setSelectedProject(null);
+            setIsCreatingProject(false);
+          }
         }}
         onSave={handleSaveProject}
         isCreating={isCreatingProject}
+        isSaving={savingProject}
       />
     </div>
   );

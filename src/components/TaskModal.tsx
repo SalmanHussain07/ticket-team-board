@@ -20,6 +20,7 @@ interface TaskModalProps {
   availableUsers: User[];
   availableProjects: Project[];
   isCreating?: boolean;
+  isSaving?: boolean;
 }
 
 const statusOptions: { value: TaskStatus; label: string }[] = [
@@ -44,7 +45,8 @@ export function TaskModal({
   currentUser, 
   availableUsers,
   availableProjects,
-  isCreating = false 
+  isCreating = false,
+  isSaving = false
 }: TaskModalProps) {
   const [formData, setFormData] = useState<TaskFormData>({
     name: '',
@@ -310,13 +312,17 @@ export function TaskModal({
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={Object.keys(errors).length > 0}>
-            <Save className="w-4 h-4 mr-2" />
-            {isCreating ? 'Create Task' : 'Save Changes'}
+          <Button onClick={handleSave} disabled={Object.keys(errors).length > 0 || isSaving}>
+            {isSaving ? (
+              <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            {isSaving ? 'Saving...' : (isCreating ? 'Create Task' : 'Save Changes')}
           </Button>
         </div>
       </DialogContent>
