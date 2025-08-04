@@ -15,6 +15,9 @@ export interface Project {
   id: string;
   name: string;
   description: string;
+  startDate: Date;
+  endDate: Date;
+  estimatedHours: number;
   createdAt: Date;
 }
 
@@ -27,6 +30,9 @@ export interface Task {
   reporter: User;
   assignee: User | null;
   project: Project;
+  startDate: Date;
+  endDate: Date;
+  hours: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,4 +44,18 @@ export interface TaskFormData {
   priority: TaskPriority;
   assigneeId: string | null;
   projectId: string;
+  startDate: Date;
+  endDate: Date;
+  hours: number;
+}
+
+export interface Holiday {
+  id: string;
+  name: string;
+  date: Date;
+}
+
+export interface HolidayFormData {
+  name: string;
+  date: Date;
 }

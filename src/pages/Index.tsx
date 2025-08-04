@@ -14,7 +14,8 @@ import { ProjectModal, ProjectFormData } from "@/components/ProjectModal";
 import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
 import { TaskCard } from "@/components/TaskCard";
-import { Task, TaskFormData, User, Project } from "@/types/task";
+import { Task, TaskFormData, User, Project, Holiday, HolidayFormData } from "@/types/task";
+import { HolidayModal } from "@/components/HolidayModal";
 import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus, LogOut, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -51,19 +52,41 @@ const mockProjects: Project[] = [
     id: '1',
     name: 'E-commerce Platform',
     description: 'Main e-commerce platform development',
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-06-30'),
+    estimatedHours: 960,
     createdAt: new Date('2024-01-01')
   },
   {
     id: '2',
     name: 'Mobile App',
     description: 'Mobile application for customers',
+    startDate: new Date('2024-02-01'),
+    endDate: new Date('2024-08-31'),
+    estimatedHours: 1120,
     createdAt: new Date('2024-01-05')
   },
   {
     id: '3',
     name: 'Analytics Dashboard',
     description: 'Internal analytics and reporting dashboard',
+    startDate: new Date('2024-03-01'),
+    endDate: new Date('2024-09-30'),
+    estimatedHours: 1040,
     createdAt: new Date('2024-01-10')
+  }
+];
+
+const mockHolidays: Holiday[] = [
+  {
+    id: '1',
+    name: 'New Year Day',
+    date: new Date('2024-01-01')
+  },
+  {
+    id: '2',
+    name: 'Independence Day',
+    date: new Date('2024-08-15')
   }
 ];
 
@@ -134,6 +157,7 @@ export default function Index() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -164,6 +188,7 @@ export default function Index() {
       setTasks(mockTasks);
       setUsers(mockUsers);
       setProjects(mockProjects);
+      setHolidays(mockHolidays);
       setCurrentUser(mockUsers[0]);
       setIsLoading(false);
     };
@@ -253,6 +278,9 @@ export default function Index() {
           reporter: currentUser,
           assignee: taskData.assigneeId ? users.find(u => u.id === taskData.assigneeId) || null : null,
           project: projects.find(p => p.id === taskData.projectId) || projects[0],
+          startDate: taskData.startDate,
+          endDate: taskData.endDate,
+          hours: taskData.hours,
           createdAt: new Date(),
           updatedAt: new Date()
         };
@@ -450,6 +478,9 @@ export default function Index() {
           id: `project-${Date.now()}`,
           name: projectData.name,
           description: projectData.description,
+          startDate: projectData.startDate,
+          endDate: projectData.endDate,
+          estimatedHours: projectData.estimatedHours,
           createdAt: new Date()
         };
         setProjects(prev => [...prev, newProject]);
@@ -462,7 +493,10 @@ export default function Index() {
         const updatedProject: Project = {
           ...selectedProject,
           name: projectData.name,
-          description: projectData.description
+          description: projectData.description,
+          startDate: projectData.startDate,
+          endDate: projectData.endDate,
+          estimatedHours: projectData.estimatedHours
         };
         setProjects(prev => prev.map(project => project.id === selectedProject.id ? updatedProject : project));
         
@@ -565,13 +599,14 @@ export default function Index() {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="kanban" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="list">List</TabsTrigger>
             <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
+            <TabsTrigger value="holidays">Holidays</TabsTrigger>
           </TabsList>
 
           <TabsContent value="kanban" className="space-y-4">
@@ -892,6 +927,39 @@ export default function Index() {
               )}
             </div>
           </TabsContent>
+
+          <TabsContent value="holidays" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Gazetted Holidays</h2>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Holiday
+              </Button>
+            </div>
+            
+            <div className="grid gap-4">
+              {holidays.map(holiday => (
+                <Card key={holiday.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">{holiday.name}</h3>
+                        <p className="text-sm text-muted-foreground">{holiday.date.toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -910,6 +978,7 @@ export default function Index() {
           currentUser={currentUser}
           availableUsers={users}
           availableProjects={projects}
+          holidays={holidays}
           isCreating={isCreatingTask}
           isSaving={savingTask}
         />
@@ -941,6 +1010,7 @@ export default function Index() {
           }
         }}
         onSave={handleSaveProject}
+        holidays={holidays}
         isCreating={isCreatingProject}
         isSaving={savingProject}
       />
