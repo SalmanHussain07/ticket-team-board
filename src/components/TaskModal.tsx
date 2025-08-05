@@ -64,8 +64,8 @@ export function TaskModal({
         description: task.description,
         status: task.status,
         priority: task.priority,
-        assigneeId: task.assignee?.id || null,
-        projectId: task.project.id
+        assigneeId: task.assigneeId || null, //giving name rn cz dont hv ID
+        projectId: task.projectId  // Assuming task.project is a string ID even tho its a name ( I DONT HAVE ID)
       });
     } else if (isCreating) {
       setFormData({
@@ -80,7 +80,7 @@ export function TaskModal({
     setErrors({});
   }, [task, isCreating, isOpen]);
 
-  const canEditAllFields = currentUser.role === 'manager';
+  const canEditAllFields = ['manager', 'admin'].includes(currentUser.role);
   const canEditLimitedFields = currentUser.role === 'developer';
 
   const validateForm = (): boolean => {
@@ -286,14 +286,14 @@ export function TaskModal({
               <Label className="text-sm font-medium">Reporter</Label>
               <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
                 <Avatar className="h-6 w-6">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.reporter.name}`} />
+                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignor}`} />
                   <AvatarFallback className="text-xs">
-                    {task.reporter.name.split(' ').map(n => n[0]).join('')}
+                    {task.assignor.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
-                <span className="font-medium">{task.reporter.name}</span>
+                <span className="font-medium">{task.assignor}</span>
                 <Badge variant="outline" className="text-xs">
-                  {task.reporter.role}
+                  {task.assignorRole} 
                 </Badge>
               </div>
             </div>

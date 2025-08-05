@@ -49,7 +49,7 @@ export function KanbanBoard({ tasks, onEditTask, currentUser }: KanbanBoardProps
   }, [tasks]);
 
   const canEditTask = (task: Task) => {
-    if (currentUser.role === 'manager') return true;
+    if (['manager', 'admin'].includes(currentUser.role)) return true;
     if (currentUser.role === 'developer') return true; // Can edit status and assignee
     return false;
   };

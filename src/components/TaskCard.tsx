@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Calendar, User, Edit3 } from "lucide-react";
 import { Task } from "@/types/task";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"; 
 
 interface TaskCardProps {
   task: Task;
@@ -89,24 +89,24 @@ export function TaskCard({ task, onEdit, canEdit = true }: TaskCardProps) {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <User className="h-3 w-3" />
             <span className="text-xs">Reporter:</span>
-            <span className="font-medium text-foreground">{task.reporter.name}</span>
+            <span className="font-medium text-foreground">{task.assignor}</span>
           </div>
           
           {task.assignee && (
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignee.name}`} />
+                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignee}`} />
                 <AvatarFallback className="text-xs bg-primary/10">
-                  {task.assignee.name.split(' ').map(n => n[0]).join('')}
+                  {task.assignee.split(' ').map(n => n[0]).join('')}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium text-foreground">{task.assignee.name}</span>
+              <span className="text-sm font-medium text-foreground">{task.assignee}</span>
             </div>
           )}
           
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            <span>Updated {new Date(task.updatedAt).toLocaleDateString()}</span>
+            <span>Updated {new Date(task.updated_at).toLocaleDateString()}</span>
           </div>
         </div>
       </CardContent>
