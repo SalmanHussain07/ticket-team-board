@@ -7,7 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Task, TaskFormData, TaskStatus, TaskPriority, User, UserRole, Project } from "@/types/task";
+import { Task, TaskFormData, TaskStatus, TaskPriority, User, UserRole, Project, Holiday } from "@/types/task";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { isDateRangeWithin } from "@/lib/business-days";
 import { Save, X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +24,9 @@ interface TaskModalProps {
   currentUser: User;
   availableUsers: User[];
   availableProjects: Project[];
+  holidays: Holiday[];
   isCreating?: boolean;
+  isSaving?: boolean;
 }
 
 const statusOptions: { value: TaskStatus; label: string }[] = [
@@ -44,7 +51,9 @@ export function TaskModal({
   currentUser, 
   availableUsers,
   availableProjects,
-  isCreating = false 
+  holidays,
+  isCreating = false,
+  isSaving = false
 }: TaskModalProps) {
   const [formData, setFormData] = useState<TaskFormData>({
     name: '',
@@ -52,7 +61,10 @@ export function TaskModal({
     status: 'todo',
     priority: 'medium',
     assigneeId: null,
-    projectId: availableProjects[0]?.id || ''
+    projectId: availableProjects[0]?.id || '',
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    hours: 8
   });
 
   const [errors, setErrors] = useState<Partial<TaskFormData>>({});
@@ -65,16 +77,25 @@ export function TaskModal({
         status: task.status,
         priority: task.priority,
         assigneeId: task.assigneeId || null, //giving name rn cz dont hv ID
-        projectId: task.projectId  // Assuming task.project is a string ID even tho its a name ( I DONT HAVE ID)
+        projectId: task.projectId  // Assuming task.project is a string ID even tho its a name ( I DONT HAVE ID),
+        startDate: task.startDate,
+        endDate: task.endDate,
+        hours: task.hours
       });
     } else if (isCreating) {
+      const defaultStartDate = new Date();
+      const defaultEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      
       setFormData({
         name: '',
         description: '',
         status: 'todo',
         priority: 'medium',
         assigneeId: null,
-        projectId: availableProjects[0]?.id || ''
+        projectId: availableProjects[0]?.id || '',
+        startDate: defaultStartDate,
+        endDate: defaultEndDate,
+        hours: 8
       });
     }
     setErrors({});
@@ -299,6 +320,119 @@ export function TaskModal({
             </div>
           )}
 
+          {/* Date Range and Hours */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !formData.startDate && "text-muted-foreground"
+                    )}
+                    disabled={!canEdit('startDate')}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.startDate ? format(formData.startDate, "PPP") : <span>Pick start date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.startDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        // Validate against project dates
+                        const selectedProject = availableProjects.find(p => p.id === formData.projectId);
+                        if (selectedProject) {
+                          if (!isDateRangeWithin(date, formData.endDate, selectedProject.startDate, selectedProject.endDate)) {
+                            // Show warning but allow the change
+                            console.warn('Task dates should be within project range');
+                          }
+                        }
+                        setFormData(prev => ({ ...prev, startDate: date }));
+                      }
+                    }}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">End Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !formData.endDate && "text-muted-foreground"
+                    )}
+                    disabled={!canEdit('endDate')}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.endDate ? format(formData.endDate, "PPP") : <span>Pick end date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.endDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        // Validate against project dates
+                        const selectedProject = availableProjects.find(p => p.id === formData.projectId);
+                        if (selectedProject) {
+                          if (!isDateRangeWithin(formData.startDate, date, selectedProject.startDate, selectedProject.endDate)) {
+                            // Show warning but allow the change
+                            console.warn('Task dates should be within project range');
+                          }
+                        }
+                        setFormData(prev => ({ ...prev, endDate: date }));
+                      }
+                    }}
+                    disabled={(date) => date <= formData.startDate}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="hours" className="text-sm font-medium">Hours</Label>
+              <Input
+                id="hours"
+                type="number"
+                min="0.5"
+                step="0.5"
+                value={formData.hours}
+                onChange={(e) => setFormData(prev => ({ ...prev, hours: parseFloat(e.target.value) || 0 }))}
+                disabled={!canEdit('hours')}
+                placeholder="Enter hours"
+              />
+            </div>
+          </div>
+
+          {/* Project date validation warning */}
+          {(() => {
+            const selectedProject = availableProjects.find(p => p.id === formData.projectId);
+            if (selectedProject && !isDateRangeWithin(formData.startDate, formData.endDate, selectedProject.startDate, selectedProject.endDate)) {
+              return (
+                <div className="p-3 border border-yellow-200 bg-yellow-50 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Warning:</strong> Task dates should be within project range ({format(selectedProject.startDate, "PPP")} - {format(selectedProject.endDate, "PPP")})
+                  </p>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* Role-based permissions notice */}
           {!canEditAllFields && (
             <div className="p-3 border border-blue-200 bg-blue-50 rounded-lg">
@@ -310,13 +444,17 @@ export function TaskModal({
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={Object.keys(errors).length > 0}>
-            <Save className="w-4 h-4 mr-2" />
-            {isCreating ? 'Create Task' : 'Save Changes'}
+          <Button onClick={handleSave} disabled={Object.keys(errors).length > 0 || isSaving}>
+            {isSaving ? (
+              <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            {isSaving ? 'Saving...' : (isCreating ? 'Create Task' : 'Save Changes')}
           </Button>
         </div>
       </DialogContent>

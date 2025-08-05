@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TaskModal } from "@/components/TaskModal";
@@ -13,7 +14,8 @@ import { ProjectModal, ProjectFormData } from "@/components/ProjectModal";
 import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
 import { TaskCard } from "@/components/TaskCard";
-import { Task, TaskFormData, User, Project, TaskStatus, TaskPriority, UserRole } from "@/types/task";
+import { Task, TaskFormData, User, Project, TaskStatus, TaskPriority, UserRole, Holiday, HolidayFormData } from "@/types/task";
+import { HolidayModal } from "@/components/HolidayModal";
 import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus, LogOut, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { HttpClient } from "@/api/communicator";
@@ -83,21 +85,43 @@ import { HttpClient } from "@/api/communicator";
 //     id: '1',
 //     name: 'E-commerce Platform',
 //     description: 'Main e-commerce platform development',
-//     createdAt: new Date('2024-01-01')
+//     startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-06-30'),
+    estimatedHours: 960,
+    createdAt: new Date('2024-01-01')
 //   },
 //   {
 //     id: '2',
 //     name: 'Mobile App',
 //     description: 'Mobile application for customers',
-//     createdAt: new Date('2024-01-05')
+//     startDate: new Date('2024-02-01'),
+    endDate: new Date('2024-08-31'),
+    estimatedHours: 1120,
+    createdAt: new Date('2024-01-05')
 //   },
 //   {
 //     id: '3',
 //     name: 'Analytics Dashboard',
 //     description: 'Internal analytics and reporting dashboard',
-//     createdAt: new Date('2024-01-10')
+//     startDate: new Date('2024-03-01'),
+    endDate: new Date('2024-09-30'),
+    estimatedHours: 1040,
+    createdAt: new Date('2024-01-10')
 //   }
 // ];
+
+const mockHolidays: Holiday[] = [
+  {
+    id: '1',
+    name: 'New Year Day',
+    date: new Date('2024-01-01')
+  },
+  {
+    id: '2',
+    name: 'Independence Day',
+    date: new Date('2024-08-15')
+  }
+];
 
 // const mockTasks: Task[] = [
 //   {
@@ -168,7 +192,7 @@ export default function Index() {
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [roles, setRoles] = useState<UserRole[]>([]);
-  // const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -182,6 +206,12 @@ export default function Index() {
   const [taskSearch, setTaskSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [savingTask, setSavingTask] = useState(false);
+  const [savingUser, setSavingUser] = useState(false);
+  const [savingProject, setSavingProject] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [deletingProject, setDeletingProject] = useState<string | null>(null);
   const { toast } = useToast();
 
 
@@ -237,6 +267,8 @@ useEffect(() => {
       } else {
         console.error("Failed to fetch users:", roleResponse.message);
       }
+
+      setHolidays(mockHolidays);
 
 
     } catch (err) {
@@ -350,7 +382,10 @@ const priorityMap: Record<TaskPriority, number> = {
         project_Id: taskData.projectId,
         assignor_Id: currentUser.id, // the one creating the task
         due_Date: null,
-        assignee_Id: taskData.assigneeId
+        assignee_Id: taskData.assigneeId,
+        startDate: taskData.startDate,
+        endDate: taskData.endDate,
+        hours: taskData.hours,
       };
 
     
@@ -375,7 +410,10 @@ const priorityMap: Record<TaskPriority, number> = {
       status_Id: statusMap[taskData.status],
       priority_Id: priorityMap[taskData.priority],
       project_Id: taskData.projectId,
-      assignee_Id: taskData.assigneeId
+      assignee_Id: taskData.assigneeId,
+      startDate: taskData.startDate,
+      endDate: taskData.endDate,
+      hours: taskData.hours,
       };
       const response = await HttpClient.Put<Task>(`/api/Tasks/${selectedTask.id}`, updatedTask);
 
@@ -694,6 +732,7 @@ const handleSaveUser = async (userData: UserFormData) => {
                 <TabsTrigger value="projects">Projects</TabsTrigger>
               </>
             )}
+            <TabsTrigger value="holidays">Holidays</TabsTrigger>
           </TabsList>
 
           {/* <TabsContent value="kanban" className="space-y-4">              
@@ -729,14 +768,20 @@ const handleSaveUser = async (userData: UserFormData) => {
               />
             </div>
             <div className="space-y-4">
-              {filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={handleEditTask}
-                  canEdit={true}
-                />
-              ))}
+              {filteredTasks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {taskSearch ? 'No tasks found matching your search.' : 'No tasks available.'}
+                </div>
+              ) : (
+                filteredTasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={handleEditTask}
+                    canEdit={true}
+                  />
+                ))
+              )}
             </div>
           </TabsContent>
 
@@ -1010,44 +1055,57 @@ const handleSaveUser = async (userData: UserFormData) => {
         </Tabs>
       </main>
 
-      <TaskModal
-        task={selectedTask}
-        isOpen={isTaskModalOpen}
-        onClose={() => {
-          setIsTaskModalOpen(false);
-          setSelectedTask(null);
-          setIsCreatingTask(false);
-        }}
-        onSave={handleSaveTask}
-        currentUser={currentUser}
-        availableUsers={users}
-        availableProjects={projects}
-        isCreating={isCreatingTask}
-      />
+      {currentUser && (
+        <TaskModal
+          task={selectedTask}
+          isOpen={isTaskModalOpen}
+          onClose={() => {
+            if (!savingTask) {
+              setIsTaskModalOpen(false);
+              setSelectedTask(null);
+              setIsCreatingTask(false);
+            }
+          }}
+          onSave={handleSaveTask}
+          currentUser={currentUser}
+          availableUsers={users}
+          availableProjects={projects}
+          holidays={holidays}
+          isCreating={isCreatingTask}
+          isSaving={savingTask}
+        />
+      )}
 
       <UserModal
         user={selectedUser}
         roles={roles}
         isOpen={isUserModalOpen}
         onClose={() => {
-          setIsUserModalOpen(false);
-          setSelectedUser(null);
-          setIsCreatingUser(false);
+          if (!savingUser) {
+            setIsUserModalOpen(false);
+            setSelectedUser(null);
+            setIsCreatingUser(false);
+          }
         }}
         onSave={handleSaveUser}
         isCreating={isCreatingUser}
+        isSaving={savingUser}
       />
 
       <ProjectModal
         project={selectedProject}
         isOpen={isProjectModalOpen}
         onClose={() => {
-          setIsProjectModalOpen(false);
-          setSelectedProject(null);
-          setIsCreatingProject(false);
+          if (!savingProject) {
+            setIsProjectModalOpen(false);
+            setSelectedProject(null);
+            setIsCreatingProject(false);
+          }
         }}
         onSave={handleSaveProject}
+        holidays={holidays}
         isCreating={isCreatingProject}
+        isSaving={savingProject}
       />
     </div>
   );
