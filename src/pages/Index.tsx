@@ -21,95 +21,6 @@ import { useToast } from "@/hooks/use-toast";
 import { HttpClient } from "@/api/communicator";
 
 
-
-//previous mock task
-  // {
-  //   id: 'TASK-002',
-  //   name: 'Design responsive dashboard',
-  //   description: 'Create a mobile-friendly dashboard with charts and data visualization components.',
-  //   status: 'todo',
-  //   priority: 'medium',
-  //   reporter: mockUsers[0],
-  //   assignee: mockUsers[2],
-  //   project: mockProjects[2],
-  //   createdAt: new Date('2024-01-11'),
-  //   updatedAt: new Date('2024-01-11')
-  // },
-
-// Mock data for demonstration
-// const mockUsers: User[] = [
-//   {
-//     id: '1',
-//     name: 'Sarah Johnson',
-//     full_name: 'Sarah Johnson',
-//     role: 'manager',
-//     email: 'sarah@company.com',
-//     created_at: '2024-01-01'
-//   },
-//   {
-//     id: '2',
-//     name: 'Mike Chen',
-//     full_name: 'Mike Chen',
-//     role: 'developer',
-//     email: 'mike@company.com',
-//     created_at: '2024-01-01'
-//   },
-//   {
-//     id: '3',
-//     name: 'Emily Davis',
-//     full_name: 'Emily Davis',
-//     role: 'developer',
-//     email: 'emily@company.com',
-//     created_at: '2024-01-01'
-//   },
-//   {
-//     id: '4',
-//     name: 'Alex Kim',
-//     full_name: 'Alex Kim',
-//     role: 'developer',
-//     email: 'alex@company.com',
-//     created_at: '2024-01-01'
-//   },
-//   {
-//     id: '11111111-1111-1111-1111-111111111111',
-//     name: 'user1',
-//     full_name: 'user 1',
-//     role: 'developer',
-//     email: 'user1@company.com',
-//     created_at: '2024-01-01'
-//   }
-// ];
-
-// const mockProjects: Project[] = [
-//   {
-//     id: '1',
-//     name: 'E-commerce Platform',
-//     description: 'Main e-commerce platform development',
-//     startDate: new Date('2024-01-01'),
-    endDate: new Date('2024-06-30'),
-    estimatedHours: 960,
-    createdAt: new Date('2024-01-01')
-//   },
-//   {
-//     id: '2',
-//     name: 'Mobile App',
-//     description: 'Mobile application for customers',
-//     startDate: new Date('2024-02-01'),
-    endDate: new Date('2024-08-31'),
-    estimatedHours: 1120,
-    createdAt: new Date('2024-01-05')
-//   },
-//   {
-//     id: '3',
-//     name: 'Analytics Dashboard',
-//     description: 'Internal analytics and reporting dashboard',
-//     startDate: new Date('2024-03-01'),
-    endDate: new Date('2024-09-30'),
-    estimatedHours: 1040,
-    createdAt: new Date('2024-01-10')
-//   }
-// ];
-
 const mockHolidays: Holiday[] = [
   {
     id: '1',
@@ -122,69 +33,6 @@ const mockHolidays: Holiday[] = [
     date: new Date('2024-08-15')
   }
 ];
-
-// const mockTasks: Task[] = [
-//   {
-//     id: 'TASK-001',
-//     name: 'Implement user authentication',
-//     description: 'Add login and registration functionality with JWT tokens and secure password hashing.',
-//     status: 'in-progress',
-//     priority: 'high',
-//     assignor: "user1",
-//     assignee: "user2",
-//     project: "project1",
-//     created_at: '2024-01-11',
-//     updated_at: '2024-01-11'
-//   },
-//   {
-//     id: 'TASK-002',
-//     name: 'Design responsive dashboard',
-//     description: 'Create a mobile-friendly dashboard with charts and data visualization components.',
-//     status: 'todo',
-//     priority: 'medium',
-//     assignor: "user1",
-//     assignee: "user2",
-//     project: "project1",
-//     created_at: '2024-01-11',
-//     updated_at: '2024-01-11'
-//   },
-//   {
-//     id: 'TASK-003',
-//     name: 'Fix production bug #247',
-//     description: 'Resolve critical bug causing API timeouts in production environment.',
-//     status: 'review',
-//     priority: 'urgent',
-//     assignor: "user2",
-//     assignee: "user3",
-//     project: "project1",
-//     created_at: '2024-01-11',
-//     updated_at: '2024-01-11'
-//   },
-//   {
-//     id: 'TASK-004',
-//     name: 'Update documentation',
-//     description: 'Refresh API documentation and add examples for new endpoints.',
-//     status: 'done',
-//     priority: 'low',
-//     assignor: "user2",
-//     assignee: "user3",
-//     project: "project1",
-//     created_at: '2024-01-11',
-//     updated_at: '2024-01-11'
-//   },
-//   {
-//     id: 'TASK-005',
-//     name: 'Performance optimization',
-//     description: 'Optimize database queries and implement caching for better performance.',
-//     status: 'todo',
-//     priority: 'medium',
-//     assignor: "user2",
-//     assignee: "user3",
-//     project: "project1",
-//     created_at: '2024-01-11',
-//     updated_at: '2024-01-11'
-//   }
-// ];
 
 export default function Index() {
   // const [tasks, setTasks] = useState<Task[]>(mockTasks);
@@ -200,9 +48,12 @@ export default function Index() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
+  const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [isCreatingHoliday, setIsCreatingHoliday] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
@@ -210,6 +61,7 @@ export default function Index() {
   const [savingTask, setSavingTask] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
+  const [savingHoliday, setSavingHoliday] = useState(false);
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [deletingProject, setDeletingProject] = useState<string | null>(null);
   const { toast } = useToast();
@@ -341,9 +193,10 @@ useEffect(() => {
 
 
   const handleEditTask = (task: Task) => {
-    setSelectedTask(task);
-    setIsCreatingTask(false);
-    setIsTaskModalOpen(true);
+    // setSelectedTask(task);
+    // setIsCreatingTask(false);
+    // setIsTaskModalOpen(true);
+    window.location.href = `/task/${task.id}`;
   };
 
   const statusMap: Record<TaskStatus, number> = {
@@ -639,6 +492,54 @@ const handleSaveUser = async (userData: UserFormData) => {
    if (!currentUser || tasks.length === 0) {
         return <p>Loading...</p>; // Or return a spinner / skeleton
       }
+
+  const handleCreateHoliday = () => {
+    setSelectedHoliday(null);
+    setIsCreatingHoliday(true);
+    setIsHolidayModalOpen(true);
+  };
+
+  const handleEditHoliday = (holiday: Holiday) => {
+    setSelectedHoliday(holiday);
+    setIsCreatingHoliday(false);
+    setIsHolidayModalOpen(true);
+  };
+
+  const handleSaveHoliday = async (holidayData: HolidayFormData) => {
+    setSavingHoliday(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (isCreatingHoliday) {
+        const newHoliday: Holiday = {
+          id: `holiday-${Date.now()}`,
+          name: holidayData.name,
+          date: holidayData.date
+        };
+        setHolidays(prev => [...prev, newHoliday]);
+        toast({
+          title: "Holiday added",
+          description: `"${newHoliday.name}" has been added.`,
+        });
+      } else if (selectedHoliday) {
+        const updatedHoliday: Holiday = {
+          ...selectedHoliday,
+          name: holidayData.name,
+          date: holidayData.date
+        };
+        setHolidays(prev => prev.map(h => h.id === selectedHoliday.id ? updatedHoliday : h));
+        toast({
+          title: "Holiday updated",
+          description: `"${updatedHoliday.name}" has been updated.`,
+        });
+      }
+    } finally {
+      setSavingHoliday(false);
+      setIsHolidayModalOpen(false);
+      setSelectedHoliday(null);
+      setIsCreatingHoliday(false);
+    }
+  };
 
   return (
 
@@ -992,6 +893,7 @@ const handleSaveUser = async (userData: UserFormData) => {
             </div>
             
             <div className="grid gap-4">
+              
               {filteredProjects.map(project => (
                 <Card key={project.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
@@ -1052,6 +954,47 @@ const handleSaveUser = async (userData: UserFormData) => {
               ))}
             </div>
           </TabsContent>
+
+
+          <TabsContent value="holidays" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Gazetted Holidays</h2>
+              <Button onClick={handleCreateHoliday} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Holiday
+              </Button>
+            </div>
+            
+            <div className="grid gap-4">
+              {holidays.map(holiday => (
+                <Card key={holiday.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">{holiday.name}</h3>
+                        <p className="text-sm text-muted-foreground">{holiday.date.toLocaleDateString()}</p>
+                      </div>
+                       <div className="flex items-center gap-2">
+                         <Button variant="ghost" size="sm" onClick={() => handleEditHoliday(holiday)}>
+                           <Edit className="h-4 w-4" />
+                         </Button>
+                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setHolidays(prev => prev.filter(h => h.id !== holiday.id))}>
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+
+
+
+
+
+
         </Tabs>
       </main>
 
@@ -1106,6 +1049,21 @@ const handleSaveUser = async (userData: UserFormData) => {
         holidays={holidays}
         isCreating={isCreatingProject}
         isSaving={savingProject}
+      />
+
+      <HolidayModal
+        holiday={selectedHoliday}
+        isOpen={isHolidayModalOpen}
+        onClose={() => {
+          if (!savingHoliday) {
+            setIsHolidayModalOpen(false);
+            setSelectedHoliday(null);
+            setIsCreatingHoliday(false);
+          }
+        }}
+        onSave={handleSaveHoliday}
+        isCreating={isCreatingHoliday}
+        isSaving={savingHoliday}
       />
     </div>
   );

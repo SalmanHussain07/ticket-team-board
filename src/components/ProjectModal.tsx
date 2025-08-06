@@ -38,7 +38,7 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     estimatedHours: 0
   });
-  const [errors, setErrors] = useState<Partial<ProjectFormData>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -51,23 +51,18 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
           estimatedHours: project.estimatedHours
         });
       } else {
-        const defaultStartDate = new Date();
-        const defaultEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        const estimatedHours = calculateEstimatedHours(defaultStartDate, defaultEndDate, holidays);
-        
         setFormData({
           name: '',
           description: '',
-          startDate: defaultStartDate,
-          endDate: defaultEndDate,
-          estimatedHours
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          estimatedHours: 0
         });
       }
       setErrors({});
     }
-  }, [isOpen, project, isCreating, holidays]);
+  }, [isOpen, project, isCreating]);
 
-  // Recalculate estimated hours when dates change
   useEffect(() => {
     if (formData.startDate && formData.endDate && formData.endDate > formData.startDate) {
       const estimatedHours = calculateEstimatedHours(formData.startDate, formData.endDate, holidays);
@@ -75,8 +70,8 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
     }
   }, [formData.startDate, formData.endDate, holidays]);
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<ProjectFormData> = {};
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Project name is required';
@@ -101,26 +96,36 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
     }
   };
 
+  const handleDateChange = (field: 'startDate' | 'endDate', date: Date | undefined) => {
+    if (date) {
+      setFormData(prev => ({ ...prev, [field]: date }));
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
             {isCreating ? 'Create New Project' : 'Edit Project'}
           </DialogTitle>
           <DialogDescription>
-            {isCreating ? 'Add a new project to the system.' : 'Edit project details.'}
+            {isCreating 
+              ? 'Enter the details for the new project. The estimated hours will be calculated automatically based on working days.'
+              : 'Update the project details. The estimated hours will be recalculated automatically.'
+            }
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
+
+        <div className="grid gap-6 py-4">
           <div className="grid gap-2">
             <Label htmlFor="name">Project Name</Label>
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Enter project name"
+              disabled={isSaving}
             />
             {errors.name && <span className="text-sm text-destructive">{errors.name}</span>}
           </div>
@@ -130,14 +135,15 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Enter project description"
+              disabled={isSaving}
               rows={3}
             />
             {errors.description && <span className="text-sm text-destructive">{errors.description}</span>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label>Start Date</Label>
               <Popover>
@@ -148,21 +154,23 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
                       "justify-start text-left font-normal",
                       !formData.startDate && "text-muted-foreground"
                     )}
+                    disabled={isSaving}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.startDate ? format(formData.startDate, "PPP") : <span>Pick start date</span>}
+                    {formData.startDate ? format(formData.startDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
                     selected={formData.startDate}
-                    onSelect={(date) => date && setFormData({ ...formData, startDate: date })}
+                    onSelect={(date) => handleDateChange('startDate', date)}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
                 </PopoverContent>
               </Popover>
+              {errors.startDate && <span className="text-sm text-destructive">{errors.startDate}</span>}
             </div>
 
             <div className="grid gap-2">
@@ -173,20 +181,19 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
                     variant="outline"
                     className={cn(
                       "justify-start text-left font-normal",
-                      !formData.endDate && "text-muted-foreground",
-                      errors.endDate && "border-destructive"
+                      !formData.endDate && "text-muted-foreground"
                     )}
+                    disabled={isSaving}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.endDate ? format(formData.endDate, "PPP") : <span>Pick end date</span>}
+                    {formData.endDate ? format(formData.endDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
                     selected={formData.endDate}
-                    onSelect={(date) => date && setFormData({ ...formData, endDate: date })}
-                    disabled={(date) => date <= formData.startDate}
+                    onSelect={(date) => handleDateChange('endDate', date)}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
@@ -204,10 +211,11 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
               value={formData.estimatedHours}
               readOnly
               className="bg-muted"
+              placeholder="Will be calculated automatically"
             />
-            <p className="text-sm text-muted-foreground">
-              Calculated automatically based on working days (8 hours/day, excluding weekends and holidays)
-            </p>
+            <span className="text-sm text-muted-foreground">
+              Calculated based on working days (excluding weekends and holidays): {formData.estimatedHours} hours
+            </span>
           </div>
         </div>
 
@@ -215,15 +223,11 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
           <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button onClick={handleSave} disabled={isSaving} className="gap-2">
             {isSaving ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current" />
-                Saving...
-              </>
-            ) : (
-              isCreating ? 'Create Project' : 'Save Changes'
-            )}
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+            ) : null}
+            {isCreating ? 'Create Project' : 'Save Changes'}
           </Button>
         </div>
       </DialogContent>
