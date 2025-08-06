@@ -100,6 +100,9 @@ const mockTasks: Task[] = [
     reporter: mockUsers[0],
     assignee: mockUsers[1],
     project: mockProjects[0],
+    startDate: new Date('2024-01-10'),
+    endDate: new Date('2024-01-15'),
+    hours: 32,
     createdAt: new Date('2024-01-10'),
     updatedAt: new Date('2024-01-12')
   },
@@ -112,6 +115,9 @@ const mockTasks: Task[] = [
     reporter: mockUsers[0],
     assignee: mockUsers[2],
     project: mockProjects[2],
+    startDate: new Date('2024-01-15'),
+    endDate: new Date('2024-01-20'),
+    hours: 24,
     createdAt: new Date('2024-01-11'),
     updatedAt: new Date('2024-01-11')
   },
@@ -124,6 +130,9 @@ const mockTasks: Task[] = [
     reporter: mockUsers[1],
     assignee: mockUsers[3],
     project: mockProjects[0],
+    startDate: new Date('2024-01-09'),
+    endDate: new Date('2024-01-10'),
+    hours: 8,
     createdAt: new Date('2024-01-09'),
     updatedAt: new Date('2024-01-13')
   },
@@ -136,6 +145,9 @@ const mockTasks: Task[] = [
     reporter: mockUsers[0],
     assignee: mockUsers[2],
     project: mockProjects[1],
+    startDate: new Date('2024-01-08'),
+    endDate: new Date('2024-01-10'),
+    hours: 16,
     createdAt: new Date('2024-01-08'),
     updatedAt: new Date('2024-01-10')
   },
@@ -148,6 +160,9 @@ const mockTasks: Task[] = [
     reporter: mockUsers[0],
     assignee: null,
     project: mockProjects[0],
+    startDate: new Date('2024-01-12'),
+    endDate: new Date('2024-01-18'),
+    hours: 40,
     createdAt: new Date('2024-01-13'),
     updatedAt: new Date('2024-01-13')
   }
@@ -165,9 +180,12 @@ export default function Index() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
+  const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [isCreatingHoliday, setIsCreatingHoliday] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
@@ -175,6 +193,7 @@ export default function Index() {
   const [savingTask, setSavingTask] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
+  const [savingHoliday, setSavingHoliday] = useState(false);
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [deletingProject, setDeletingProject] = useState<string | null>(null);
   const { toast } = useToast();
@@ -254,9 +273,8 @@ export default function Index() {
   };
 
   const handleEditTask = (task: Task) => {
-    setSelectedTask(task);
-    setIsCreatingTask(false);
-    setIsTaskModalOpen(true);
+    // Navigate to task details page instead of opening modal
+    window.location.href = `/task/${task.id}`;
   };
 
   const handleSaveTask = async (taskData: TaskFormData) => {
@@ -520,6 +538,54 @@ export default function Index() {
     }
   };
 
+  const handleCreateHoliday = () => {
+    setSelectedHoliday(null);
+    setIsCreatingHoliday(true);
+    setIsHolidayModalOpen(true);
+  };
+
+  const handleEditHoliday = (holiday: Holiday) => {
+    setSelectedHoliday(holiday);
+    setIsCreatingHoliday(false);
+    setIsHolidayModalOpen(true);
+  };
+
+  const handleSaveHoliday = async (holidayData: HolidayFormData) => {
+    setSavingHoliday(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (isCreatingHoliday) {
+        const newHoliday: Holiday = {
+          id: `holiday-${Date.now()}`,
+          name: holidayData.name,
+          date: holidayData.date
+        };
+        setHolidays(prev => [...prev, newHoliday]);
+        toast({
+          title: "Holiday added",
+          description: `"${newHoliday.name}" has been added.`,
+        });
+      } else if (selectedHoliday) {
+        const updatedHoliday: Holiday = {
+          ...selectedHoliday,
+          name: holidayData.name,
+          date: holidayData.date
+        };
+        setHolidays(prev => prev.map(h => h.id === selectedHoliday.id ? updatedHoliday : h));
+        toast({
+          title: "Holiday updated",
+          description: `"${updatedHoliday.name}" has been updated.`,
+        });
+      }
+    } finally {
+      setSavingHoliday(false);
+      setIsHolidayModalOpen(false);
+      setSelectedHoliday(null);
+      setIsCreatingHoliday(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -578,10 +644,10 @@ export default function Index() {
                 />
               )}
               {currentUser?.role === 'manager' && (
-                <Button onClick={handleCreateTask} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  New Task
-                </Button>
+              <Button onClick={handleCreateTask} className="gap-2">
+                <Plus className="h-4 w-4" />
+                New Task
+              </Button>
               )}
               <Button 
                 variant="outline" 
@@ -931,7 +997,7 @@ export default function Index() {
           <TabsContent value="holidays" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">Gazetted Holidays</h2>
-              <Button className="gap-2">
+              <Button onClick={handleCreateHoliday} className="gap-2">
                 <Plus className="h-4 w-4" />
                 Add Holiday
               </Button>
@@ -946,14 +1012,14 @@ export default function Index() {
                         <h3 className="font-medium">{holiday.name}</h3>
                         <p className="text-sm text-muted-foreground">{holiday.date.toLocaleDateString()}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                       <div className="flex items-center gap-2">
+                         <Button variant="ghost" size="sm" onClick={() => handleEditHoliday(holiday)}>
+                           <Edit className="h-4 w-4" />
+                         </Button>
+                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setHolidays(prev => prev.filter(h => h.id !== holiday.id))}>
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1013,6 +1079,21 @@ export default function Index() {
         holidays={holidays}
         isCreating={isCreatingProject}
         isSaving={savingProject}
+      />
+
+      <HolidayModal
+        holiday={selectedHoliday}
+        isOpen={isHolidayModalOpen}
+        onClose={() => {
+          if (!savingHoliday) {
+            setIsHolidayModalOpen(false);
+            setSelectedHoliday(null);
+            setIsCreatingHoliday(false);
+          }
+        }}
+        onSave={handleSaveHoliday}
+        isCreating={isCreatingHoliday}
+        isSaving={savingHoliday}
       />
     </div>
   );

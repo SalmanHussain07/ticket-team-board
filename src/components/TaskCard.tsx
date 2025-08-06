@@ -86,6 +86,17 @@ export function TaskCard({ task, onEdit, canEdit = true }: TaskCardProps) {
         </div>
 
         <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Project:</span>
+            <span className="font-medium text-foreground truncate">{task.project.name}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Due Date:</span>
+            <span className={`font-medium ${task.endDate < new Date() && task.status !== 'done' ? 'text-destructive' : 'text-foreground'}`}>
+              {task.endDate.toLocaleDateString()}
+            </span>
+          </div>
+          
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <User className="h-3 w-3" />
             <span className="text-xs">Reporter:</span>
