@@ -32,21 +32,8 @@ export interface Project {
   startDate: Date;
   endDate: Date;
   estimatedHours: number;
-  createdAt: string;
+  createdAt: Date;
 }
-
-// export interface Task {
-//   id: string;
-//   name: string;
-//   description: string;
-//   status: TaskStatus;
-//   priority: TaskPriority;
-//   reporter: User;
-//   assignee: User | null;
-//   project: Project;
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
 
 export interface Task {
   id: string;
@@ -63,8 +50,8 @@ export interface Task {
   endDate: Date;
   hours: number;
   projectId: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 
 }
 

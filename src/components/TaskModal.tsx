@@ -77,7 +77,7 @@ export function TaskModal({
         status: task.status,
         priority: task.priority,
         assigneeId: task.assigneeId || null, //giving name rn cz dont hv ID
-        projectId: task.projectId  // Assuming task.project is a string ID even tho its a name ( I DONT HAVE ID),
+        projectId: task.projectId,  // Assuming task.project is a string ID even tho its a name ( I DONT HAVE ID),
         startDate: task.startDate,
         endDate: task.endDate,
         hours: task.hours
@@ -197,9 +197,11 @@ export function TaskModal({
               onValueChange={(value) => setFormData(prev => ({ ...prev, projectId: value }))}
               disabled={!canEdit('projectId')}
             >
-              <SelectTrigger>
+              <SelectTrigger className="whitespace-normal">
                 <SelectValue placeholder="Select project..." />
               </SelectTrigger>
+
+
               <SelectContent>
                 {availableProjects.map(project => (
                   <SelectItem key={project.id} value={project.id}>
@@ -448,7 +450,7 @@ export function TaskModal({
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={Object.keys(errors).length > 0 || isSaving}>
+          <Button onClick={handleSave} disabled={ isSaving}>
             {isSaving ? (
               <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current" />
             ) : (

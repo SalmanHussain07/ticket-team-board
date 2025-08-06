@@ -86,9 +86,9 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
       newErrors.description = 'Project description is required';
     }
 
-    if (formData.endDate <= formData.startDate) {
-      newErrors.endDate = 'End date must be after start date';
-    }
+    // if (formData.endDate <= formData.startDate) {
+    //   newErrors.endDate = 'End date must be after start date';
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -192,7 +192,7 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
                   />
                 </PopoverContent>
               </Popover>
-              {errors.endDate && <span className="text-sm text-destructive">{errors.endDate}</span>}
+              {/* {errors.endDate && <span className="text-sm text-destructive">{errors.endDate}</span>} */}
             </div>
           </div>
 
