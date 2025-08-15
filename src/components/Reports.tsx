@@ -26,8 +26,8 @@ export const Reports = ({ tasks, users }: ReportsProps) => {
   // Tasks by assignee
   const assigneeData = users.map(user => ({
     name: user.name,
-    tasks: tasks.filter(task => task.assignee?.id === user.id).length,
-    completed: tasks.filter(task => task.assignee?.id === user.id && task.status === 'done').length
+    tasks: tasks.filter(task => task.assigneeId === user.id).length,
+    completed: tasks.filter(task => task.assigneeId === user.id && task.status === 'done').length
   })).filter(item => item.tasks > 0);
 
   // Priority distribution for pie chart
@@ -250,7 +250,7 @@ export const Reports = ({ tasks, users }: ReportsProps) => {
         <CardContent>
           <div className="space-y-4">
             {users.map(user => {
-              const userTasks = tasks.filter(task => task.assignee?.id === user.id);
+              const userTasks = tasks.filter(task => task.assigneeId === user.id);
               const completedTasks = userTasks.filter(task => task.status === 'done').length;
               const inProgressTasks = userTasks.filter(task => task.status === 'in-progress').length;
               const userCompletionRate = userTasks.length > 0 ? Math.round((completedTasks / userTasks.length) * 100) : 0;

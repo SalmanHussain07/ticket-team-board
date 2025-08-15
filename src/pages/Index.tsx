@@ -10,7 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { TaskModal } from "@/components/TaskModal";
 import { UserModal, UserFormData } from "@/components/UserModal";
-import { ProjectModal, ProjectFormData } from "@/components/ProjectModal";
+import { ProjectModal } from "@/components/ProjectModal";
+import { ProjectFormData } from "@/types/task";
 import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
 import { TaskCard } from "@/components/TaskCard";
@@ -1156,36 +1157,8 @@ const handleSaveUser = async (userData: UserFormData) => {
         isSaving={savingUser}
       />
 
-      <ProjectModal
-        project={selectedProject}
-        isOpen={isProjectModalOpen}
-        onClose={() => {
-          if (!savingProject) {
-            setIsProjectModalOpen(false);
-            setSelectedProject(null);
-            setIsCreatingProject(false);
-          }
-        }}
-        onSave={handleSaveProject}
-        holidays={holidays}
-        isCreating={isCreatingProject}
-        isSaving={savingProject}
-      />
+      {/* Project Modal removed - now handled in separate Products page */}
 
-      <HolidayModal
-        holiday={selectedHoliday}
-        isOpen={isHolidayModalOpen}
-        onClose={() => {
-          if (!savingHoliday) {
-            setIsHolidayModalOpen(false);
-            setSelectedHoliday(null);
-            setIsCreatingHoliday(false);
-          }
-        }}
-        onSave={handleSaveHoliday}
-        isCreating={isCreatingHoliday}
-        isSaving={savingHoliday}
-      />
     </div>
   );
 }

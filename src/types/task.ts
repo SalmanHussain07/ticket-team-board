@@ -29,6 +29,7 @@ export interface Project {
   id: string;
   name: string;
   description: string;
+  productId: string;
   startDate: Date;
   endDate: Date;
   estimatedHours: number;
@@ -79,6 +80,15 @@ export interface TaskFormData {
   priority: TaskPriority;
   assigneeId: string | null;
   projectId: string;
+  startDate: Date;
+  endDate: Date;
+  estimatedHours: number;
+}
+
+export interface ProjectFormData {
+  name: string;
+  description: string;
+  productId: string;
   startDate: Date;
   endDate: Date;
   estimatedHours: number;
