@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 interface KanbanBoardProps {
   tasks: Task[];
   onEditTask: (task: Task) => void;
+  onView: (task: Task) => void;
   currentUser: User;
 }
 
@@ -40,7 +41,7 @@ const statusStyles = {
   done: "border-status-done bg-status-done/5"
 };
 
-export function KanbanBoard({ tasks, onEditTask, currentUser }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onEditTask, onView, currentUser }: KanbanBoardProps) {
   const tasksByStatus = useMemo(() => {
     return columns.reduce((acc, column) => {
       acc[column.status] = tasks.filter(task => task.status === column.status);
@@ -92,6 +93,7 @@ export function KanbanBoard({ tasks, onEditTask, currentUser }: KanbanBoardProps
                     key={task.id}
                     task={task}
                     onEdit={onEditTask}
+                    onView={onView}
                     canEdit={canEditTask(task)}
                   />
                 ))

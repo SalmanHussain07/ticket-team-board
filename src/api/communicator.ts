@@ -1,4 +1,3 @@
-
 const BASE_URL = "https://localhost:7111";
 
 export interface ApiResponse<T = null> {
@@ -9,19 +8,7 @@ export interface ApiResponse<T = null> {
 }
 
 export class HttpClient {
-    // private static antiforgeryToken: string | null = null;
-
-    // private static async fetchAntiforgeryToken() {
-    //     if (!this.antiforgeryToken) {
-    //         const response = await fetch('/api/v1/Authentication/get-token', { method: 'GET' });
-    //         const tokenData = await response.json();
-    //         this.antiforgeryToken = tokenData.token;
-    //     }
-    // }
-
     private static async getHeaders() {
-        // await this.fetchAntiforgeryToken();
-
         const token = localStorage.getItem('token');
         const username = localStorage.getItem('user');
 
@@ -29,41 +16,54 @@ export class HttpClient {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
             'Username': username || ''
-            // 'X-CSRF-TOKEN': this.antiforgeryToken || ''
+        };
+    }
+    private static async parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
+        const raw = await response.json().catch(() => undefined);
+
+        const isWrapped =
+            raw && typeof raw === 'object' && 'response' in raw && 'data' in raw;
+
+        if (isWrapped) {
+            const code = raw.response?.code || '0';
+            const desc = raw.response?.desc || '';
+
+            return {
+                isError: code !== '200',
+                message: desc || (code === '200' ? 'Success' : 'Error'),
+                code: code,
+                data: code === '200' ? (raw.data as T) : undefined
+            };
+        }
+
+        // Fallback to HTTP status checks
+        if (!response.ok) {
+            return {
+                isError: true,
+                message: response.statusText,
+                code: response.status.toString(),
+                data: undefined
+            };
+        }
+
+        return {
+            isError: false,
+            message: 'Success',
+            code: response.status.toString(),
+            data: raw as T
         };
     }
 
+
     static async GET<T>(url: string): Promise<ApiResponse<T>> {
         try {
-            // console.log(this.getHeaders());
             const response = await fetch(BASE_URL + url, {
                 method: 'GET',
                 headers: await this.getHeaders(),
             });
-
-            if (!response.ok) {
-                return {
-                    isError: true,
-                    message: response.statusText,
-                    code: response.status.toString(),
-                    data: undefined
-                };
-            }
-
-            const data = (await response.json()) as T;
-            return {
-                isError: false,
-                message: 'Success',
-                code: response.status.toString(),
-                data: data,  
-            };
+            return this.parseResponse<T>(response);
         } catch (error) {
-            return {
-                isError: true,
-                message: error instanceof Error ? error.message : 'Unknown error',
-                code: error instanceof Response ? error.status.toString() : '0',
-                data: undefined
-            };
+            return this.handleError<T>(error);
         }
     }
 
@@ -74,65 +74,22 @@ export class HttpClient {
                 headers: await this.getHeaders(),
                 body: JSON.stringify(body),
             });
-
-            if (!response.ok) {
-                return {
-                    isError: true,
-                    message: response.statusText,
-                    code: response.status.toString(),
-                    data: undefined
-                };
-            }
-
-            const data = (await response.json()) as T;
-            return {
-                isError: false,
-                message: 'Success',
-                code: response.status.toString(),
-                data: data,
-            };
+            return this.parseResponse<T>(response);
         } catch (error) {
-            return {
-                isError: true,
-                message: error instanceof Error ? error.message : 'Unknown error',
-                code: error instanceof Response ? error.status.toString() : '0',
-                data: undefined
-            };
+            return this.handleError<T>(error);
         }
     }
 
-
-    static async Put<T>(url: string, body: unknown): Promise<ApiResponse<T>> {
+    static async PUT<T>(url: string, body: unknown): Promise<ApiResponse<T>> {
         try {
             const response = await fetch(BASE_URL + url, {
-                method: 'Put',
+                method: 'PUT',
                 headers: await this.getHeaders(),
                 body: JSON.stringify(body),
             });
-
-            if (!response.ok) {
-                return {
-                    isError: true,
-                    message: response.statusText,
-                    code: response.status.toString(),
-                    data: undefined
-                };
-            }
-
-            const data = (await response.json()) as T;
-            return {
-                isError: false,
-                message: 'Success',
-                code: response.status.toString(),
-                data: data,
-            };
+            return this.parseResponse<T>(response);
         } catch (error) {
-            return {
-                isError: true,
-                message: error instanceof Error ? error.message : 'Unknown error',
-                code: error instanceof Response ? error.status.toString() : '0',
-                data: undefined
-            };
+            return this.handleError<T>(error);
         }
     }
 
@@ -143,30 +100,9 @@ export class HttpClient {
                 headers: await this.getHeaders(),
                 body: JSON.stringify(body),
             });
-
-            if (!response.ok) {
-                return {
-                    isError: true,
-                    message: response.statusText,
-                    code: response.status.toString(),
-                    data: undefined
-                };
-            }
-
-            const data = (await response.json()) as T;
-            return {
-                isError: false,
-                message: 'Success',
-                code: response.status.toString(),
-                data: data,
-            };
+            return this.parseResponse<T>(response);
         } catch (error) {
-            return {
-                isError: true,
-                message: error instanceof Error ? error.message : 'Unknown error',
-                code: error instanceof Response ? error.status.toString() : '0',
-                data: undefined
-            };
+            return this.handleError<T>(error);
         }
     }
 
@@ -176,31 +112,18 @@ export class HttpClient {
                 method: 'DELETE',
                 headers: await this.getHeaders(),
             });
-
-            if (!response.ok) {
-                return {
-                    isError: true,
-                    message: response.statusText,
-                    code: response.status.toString(),
-                    data: undefined
-                };
-            }
-
-            const data = (await response.json()) as T;
-            return {
-                isError: false,
-                message: 'Success',
-                code: response.status.toString(),
-                data: data,
-            };
+            return this.parseResponse<T>(response);
+        } catch (error) {
+            return this.handleError<T>(error);
         }
-        catch (error) {
-            return {
-                isError: true,
-                message: error instanceof Error ? error.message : 'Unknown error',
-                code: error instanceof Response ? error.status.toString() : '0',
-                data: undefined
-            };
-        }
+    }
+
+    private static handleError<T>(error: unknown): ApiResponse<T> {
+        return {
+            isError: true,
+            message: error instanceof Error ? error.message : 'Unknown error',
+            code: '0',
+            data: undefined
+        };
     }
 }

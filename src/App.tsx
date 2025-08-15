@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import TaskDetails from "./pages/TaskDetails";
 import PrivateRoute from "./components/PrivateRoute";
 
+
 // localStorage.removeItem("token"); // Remove this line when deploying
 // localStorage.removeItem("user"); // Remove this line when deploying
 // localStorage.removeItem("isloggedin"); // Remove this line when deploying

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface TaskCardProps {
   task: Task;
   onEdit: (task: Task) => void;
+  onView: (task: Task) => void; 
   canEdit?: boolean;
 }
 
@@ -50,9 +51,11 @@ const priorityConfig = {
   }
 };
 
-export function TaskCard({ task, onEdit, canEdit = true }: TaskCardProps) {
+export function TaskCard({ task, onEdit, onView, canEdit = true }: TaskCardProps) {
+  console.log("TaskCard rendered", { onView });
+  console.log("TaskCard rendered", { onEdit });
   return (
-    <Card className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-gradient-to-br from-card via-card to-muted/30">
+    <Card onClick={() => onView(task)} className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-gradient-to-br from-card via-card to-muted/30">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
@@ -88,7 +91,7 @@ export function TaskCard({ task, onEdit, canEdit = true }: TaskCardProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Project:</span>
-            <span className="font-medium text-foreground truncate">{task.project.name}</span>
+            <span className="font-medium text-foreground truncate">{task.project}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Due Date:</span>

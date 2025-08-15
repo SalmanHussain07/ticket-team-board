@@ -64,7 +64,7 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
   }, [isOpen, project, isCreating]);
 
   useEffect(() => {
-    if (formData.startDate && formData.endDate && formData.endDate > formData.startDate) {
+    if (formData.startDate && formData.endDate && formData.endDate >= formData.startDate) {
       const estimatedHours = calculateEstimatedHours(formData.startDate, formData.endDate, holidays);
       setFormData(prev => ({ ...prev, estimatedHours }));
     }
@@ -194,12 +194,13 @@ export function ProjectModal({ project, isOpen, onClose, onSave, holidays, isCre
                     mode="single"
                     selected={formData.endDate}
                     onSelect={(date) => handleDateChange('endDate', date)}
+                    disabled={(date) => date < formData.startDate} // Blocks dates BEFORE start date
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
                 </PopoverContent>
               </Popover>
-              {errors.endDate && <span className="text-sm text-destructive">{errors.endDate}</span>}
+              {/* {errors.endDate && <span className="text-sm text-destructive">{errors.endDate}</span>} */}
             </div>
           </div>
 

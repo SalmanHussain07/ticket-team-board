@@ -19,20 +19,11 @@ import { HolidayModal } from "@/components/HolidayModal";
 import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus, LogOut, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { HttpClient } from "@/api/communicator";
+import { isDateRangeWithin } from "@/lib/business-days";
+import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 
-const mockHolidays: Holiday[] = [
-  {
-    id: '1',
-    name: 'New Year Day',
-    date: new Date('2024-01-01')
-  },
-  {
-    id: '2',
-    name: 'Independence Day',
-    date: new Date('2024-08-15')
-  }
-];
 
 export default function Index() {
   // const [tasks, setTasks] = useState<Task[]>(mockTasks);
@@ -41,6 +32,7 @@ export default function Index() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  //  const [holidays, setHolidays] = useState<Holiday[]>(mockHolidays);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -65,6 +57,7 @@ export default function Index() {
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [deletingProject, setDeletingProject] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
 
 useEffect(() => {
@@ -87,7 +80,18 @@ useEffect(() => {
       const response = await HttpClient.GET<Task[]>(`/api/Tasks/user/${user.id}`);
 
       if (!response.isError && response.data) {
-        setTasks(response.data);
+        // setTasks(response.data);
+        const convertedTasks = response.data.map(task => ({
+          ...task,
+          startDate: new Date(task.startDate),
+          endDate: new Date(task.endDate),
+          created_at: new Date(task.created_at),
+          updated_at: new Date(task.updated_at),
+          project_start: new Date(task.project_start),
+          project_end: new Date(task.project_end)
+        }));
+
+        setTasks(convertedTasks);
       } else {
         console.error("Failed to fetch tasks:", response.message);
       }
@@ -106,9 +110,18 @@ useEffect(() => {
       const projectResponse = await HttpClient.GET<Project[]>('/api/Project');
 
       if (!projectResponse.isError && projectResponse.data) {
-        setProjects(projectResponse.data);
+        // setProjects(projectResponse.data);
+        const convertedProjects = projectResponse.data.map(project => ({
+          ...project,
+          startDate: new Date(project.startDate),
+          endDate: new Date(project.endDate),
+          createdAt: new Date(project.createdAt)
+        }));
+
+        setProjects(convertedProjects);
       } else {
-        console.error("Failed to fetch users:", projectResponse.message);
+        // console.error("Failed to fetch users:", projectResponse.message);
+        console.error("Failed to fetch projects:", projectResponse.message);
       }
 
       // Fetch all roles
@@ -120,7 +133,22 @@ useEffect(() => {
         console.error("Failed to fetch users:", roleResponse.message);
       }
 
-      setHolidays(mockHolidays);
+      // setHolidays(mockHolidays);
+      // Fetch all holidays
+      const holidayResponse = await HttpClient.GET<Holiday[]>('/api/Holiday');
+
+      if (!holidayResponse.isError && holidayResponse.data) {
+        // setProjects(projectResponse.data);
+        const convertedHolidays = holidayResponse.data.map(holiday => ({
+          ...holiday,
+          date: new Date(holiday.date),
+        }));
+
+        setHolidays(convertedHolidays);
+      } else {
+        // console.error("Failed to fetch users:", projectResponse.message);
+        console.error("Failed to fetch holidays:", holidayResponse.message);
+      }
 
 
     } catch (err) {
@@ -193,11 +221,17 @@ useEffect(() => {
 
 
   const handleEditTask = (task: Task) => {
-    // setSelectedTask(task);
-    // setIsCreatingTask(false);
-    // setIsTaskModalOpen(true);
-    window.location.href = `/task/${task.id}`;
+    setSelectedTask(task);
+    setIsCreatingTask(false);
+    setIsTaskModalOpen(true);
+    // window.location.href = `/task/${task.id}`;
+
+    // navigate(`/task/${task.id}`, { state: { task } });
   };
+
+  const handleViewTask = (task: Task) => {
+  navigate(`/task/${task.id}`, { state: { task } }); // Your intended behavior
+};
 
   const statusMap: Record<TaskStatus, number> = {
   'todo': 1,
@@ -223,6 +257,26 @@ const priorityMap: Record<TaskPriority, number> = {
   const handleSaveTask = async (taskData: TaskFormData) => {
 
     console.log("handleSaveTask");
+
+    
+    // Date validation
+      const selectedProject = projects.find(p => p.id === taskData.projectId);
+      if (
+        selectedProject &&
+        !isDateRangeWithin(
+          taskData.startDate,
+          taskData.endDate,
+          selectedProject.startDate,
+          selectedProject.endDate
+        )
+      ) {
+        toast({
+          title: "Invalid task dates",
+          description: `Task dates must be within project range (${format(selectedProject.startDate, "PPP")} - ${format(selectedProject.endDate, "PPP")})`,
+          variant: "destructive",
+        });
+        return;
+      }
     
     if (isCreatingTask) {
       // Creating a new task
@@ -234,18 +288,27 @@ const priorityMap: Record<TaskPriority, number> = {
         priority_Id: priorityMap[taskData.priority],
         project_Id: taskData.projectId,
         assignor_Id: currentUser.id, // the one creating the task
-        due_Date: null,
         assignee_Id: taskData.assigneeId,
         startDate: taskData.startDate,
         endDate: taskData.endDate,
-        hours: taskData.hours,
+        estimatedHours: taskData.estimatedHours,
       };
 
     
       const response = await HttpClient.POST<Task>('/api/Tasks', newTask);
 
       if (!response.isError && response.data) {
-        const createdTask = response.data; // This is a complete Task
+        // const createdTask = response.data; // This is a complete Task
+        // const createdTask = response.data; // This is a complete Task
+        const createdTask = {
+          ...response.data,
+          startDate: new Date(response.data.startDate),
+          endDate: new Date(response.data.endDate),
+          created_at: new Date(response.data.created_at),
+          updated_at: new Date(response.data.updated_at),
+          project_start: new Date(response.data.project_start),
+          project_end: new Date(response.data.project_end)
+        };
 
         setTasks(prev => [...prev, createdTask]); // No TS error here
       toast({
@@ -266,13 +329,26 @@ const priorityMap: Record<TaskPriority, number> = {
       assignee_Id: taskData.assigneeId,
       startDate: taskData.startDate,
       endDate: taskData.endDate,
-      hours: taskData.hours,
+      estimatedHours: taskData.estimatedHours,
       };
-      const response = await HttpClient.Put<Task>(`/api/Tasks/${selectedTask.id}`, updatedTask);
+      const response = await HttpClient.PUT<Task>(`/api/Tasks/${selectedTask.id}`, updatedTask);
 
       if (!response.isError && response.data) {
+        const updateTask = {
+          ...response.data,
+          startDate: new Date(response.data.startDate),
+          endDate: new Date(response.data.endDate),
+          created_at: new Date(response.data.created_at),
+          updated_at: new Date(response.data.updated_at),
+          project_start: new Date(response.data.project_start),
+          project_end: new Date(response.data.project_end)
+        };
+      // setTasks(prev =>
+      //   prev.map(task => task.id === response.data!.id ? response.data! : task)
+      // );
       setTasks(prev =>
-        prev.map(task => task.id === response.data!.id ? response.data! : task)
+        // prev.map(task => task.id === response.data!.id ? response.data! : task)
+        prev.map(task => task.id === updateTask.id ? updateTask : task)
       );
       toast({
         title: "Task updated successfully",
@@ -364,7 +440,7 @@ const handleSaveUser = async (userData: UserFormData) => {
   } else if (selectedUser) {
     console.log("updatingUser");
     //  Update user
-    const response = await HttpClient.Put<User>(`/api/User/${selectedUser.id}`, userPayload);
+    const response = await HttpClient.PUT<User>(`/api/User/${selectedUser.id}`, userPayload);
 
     if (!response.isError && response.data) {
       const updatedUser = response.data;
@@ -443,7 +519,10 @@ const handleSaveUser = async (userData: UserFormData) => {
 
     const projectPayload = {
     project_Name: projectData.name,
-    description: projectData.description
+    description: projectData.description,
+    startDate: projectData.startDate,
+    endDate: projectData.endDate,
+    estimatedHours: projectData.estimatedHours,
     };
 
     if (isCreatingProject) {
@@ -454,7 +533,14 @@ const handleSaveUser = async (userData: UserFormData) => {
     const response = await HttpClient.POST<Project>('/api/Project', projectPayload);
 
     if (!response.isError && response.data) {
-      const createdProject = response.data;
+      // const createdProject = response.data;
+      // const createdProject = response.data;
+      const createdProject = {
+        ...response.data,
+        startDate: new Date(response.data.startDate),
+        endDate: new Date(response.data.endDate),
+        createdAt: new Date(response.data.createdAt),
+      };
       setProjects(prev => [...prev, createdProject]);
 
       toast({
@@ -469,10 +555,16 @@ const handleSaveUser = async (userData: UserFormData) => {
         console.log("updatingProject");
 
       // Update project
-      const response = await HttpClient.Put<Project>(`/api/Project/${selectedProject.id}`, projectPayload);
+      const response = await HttpClient.PUT<Project>(`/api/Project/${selectedProject.id}`, projectPayload);
 
       if (!response.isError && response.data) {
-        const updatedProject = response.data;
+        // const updatedProject = response.data;
+        const updatedProject = {
+        ...response.data,
+        startDate: new Date(response.data.startDate),
+        endDate: new Date(response.data.endDate),
+        createdAt: new Date(response.data.createdAt),
+      };
         setProjects(prev =>
           prev.map(project => project.id === updatedProject.id ? updatedProject : project)
         );
@@ -489,7 +581,7 @@ const handleSaveUser = async (userData: UserFormData) => {
     setIsCreatingProject(false);
   };
 
-   if (!currentUser || tasks.length === 0) {
+   if (!currentUser || !projects) {
         return <p>Loading...</p>; // Or return a spinner / skeleton
       }
 
@@ -507,38 +599,64 @@ const handleSaveUser = async (userData: UserFormData) => {
 
   const handleSaveHoliday = async (holidayData: HolidayFormData) => {
     setSavingHoliday(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+
+    const holidayPayload = {
+      name: holidayData.name,
+      date: holidayData.date
+    };
+  
       if (isCreatingHoliday) {
-        const newHoliday: Holiday = {
-          id: `holiday-${Date.now()}`,
-          name: holidayData.name,
-          date: holidayData.date
+        
+
+        // Create project
+      const response = await HttpClient.POST<Holiday>('/api/Holiday', holidayPayload);
+
+      if (!response.isError && response.data) {
+        // const createdProject = response.data;
+        // const createdProject = response.data;
+        const createdHoliday = {
+          ...response.data,
+          date: new Date(response.data.date),
         };
-        setHolidays(prev => [...prev, newHoliday]);
+        setHolidays(prev => [...prev, createdHoliday]);
+
         toast({
-          title: "Holiday added",
-          description: `"${newHoliday.name}" has been added.`,
+          title: "Holiday created successfully",
+          description: `"${createdHoliday.name}" has been created.`,
         });
+      }
+
+
+
       } else if (selectedHoliday) {
-        const updatedHoliday: Holiday = {
-          ...selectedHoliday,
-          name: holidayData.name,
-          date: holidayData.date
-        };
-        setHolidays(prev => prev.map(h => h.id === selectedHoliday.id ? updatedHoliday : h));
+        
+
+        // Update project
+      const response = await HttpClient.PUT<Holiday>(`/api/Holiday/${selectedHoliday.id}`, holidayPayload);
+
+      if (!response.isError && response.data) {
+        // const updatedProject = response.data;
+        const updatedHoliday = {
+        ...response.data,
+        date: new Date(response.data.date),
+      };
+        setHolidays(prev =>
+          prev.map(holiday => holiday.id === updatedHoliday.id ? updatedHoliday : holiday)
+        );
+
         toast({
-          title: "Holiday updated",
+          title: "Holiday updated successfully",
           description: `"${updatedHoliday.name}" has been updated.`,
         });
       }
-    } finally {
+
+
+      }
+ 
       setSavingHoliday(false);
       setIsHolidayModalOpen(false);
       setSelectedHoliday(null);
       setIsCreatingHoliday(false);
-    }
   };
 
   return (
@@ -569,7 +687,7 @@ const handleSaveUser = async (userData: UserFormData) => {
                       {currentUser.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium">{currentUser.name}</span>
+                  <span className="font-medium">{currentUser.full_name}</span>
                   <Badge 
                     variant="outline" 
                     className={`text-xs ml-auto ${
@@ -651,6 +769,7 @@ const handleSaveUser = async (userData: UserFormData) => {
                 tasks={tasks}
                 currentUser={currentUser}
                 onEditTask={handleEditTask}
+                onView={handleViewTask}
               />
             ) : (
               <p>No tasks found.</p>
@@ -679,6 +798,7 @@ const handleSaveUser = async (userData: UserFormData) => {
                     key={task.id}
                     task={task}
                     onEdit={handleEditTask}
+                    onView={handleViewTask} 
                     canEdit={true}
                   />
                 ))
@@ -905,7 +1025,8 @@ const handleSaveUser = async (userData: UserFormData) => {
                             <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
                             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                               {/* <span>Created: {project.createdAt.toLocaleDateString()}</span> */}
-                              <span>Created: {project.createdAt}</span>
+                              {/* <span>Created: {project.createdAt}</span> */}
+                              <span>Created: {project.createdAt.toLocaleDateString()}</span>
                               {/* <span>Tasks: {tasks.filter(t => t.projectId === project.id).length}</span> */}
                             </div>
                           </div>

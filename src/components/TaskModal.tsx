@@ -12,9 +12,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-import { isDateRangeWithin } from "@/lib/business-days";
 import { Save, X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isDateRangeWithin, calculateEstimatedHours, calculateBusinessDays } from "@/lib/business-days";
 
 interface TaskModalProps {
   task: Task | null;
@@ -64,10 +64,17 @@ export function TaskModal({
     projectId: availableProjects[0]?.id || '',
     startDate: new Date(),
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-    hours: 8
+    estimatedHours: 0
   });
 
   const [errors, setErrors] = useState<Partial<TaskFormData>>({});
+
+  useEffect(() => {
+  if (formData.startDate && formData.endDate && formData.endDate >= formData.startDate) {
+    const estimatedHours = calculateEstimatedHours(formData.startDate, formData.endDate, holidays);
+    setFormData(prev => ({ ...prev, estimatedHours }));
+  }
+}, [formData.startDate, formData.endDate, holidays]);
 
   useEffect(() => {
     if (task) {
@@ -77,10 +84,10 @@ export function TaskModal({
         status: task.status,
         priority: task.priority,
         assigneeId: task.assigneeId || null, //giving name rn cz dont hv ID
-        projectId: task.projectId  // Assuming task.project is a string ID even tho its a name ( I DONT HAVE ID),
+        projectId: task.projectId,  // Assuming task.project is a string ID even tho its a name ( I DONT HAVE ID),
         startDate: task.startDate,
         endDate: task.endDate,
-        hours: task.hours
+        estimatedHours: task.estimatedHours
       });
     } else if (isCreating) {
       const defaultStartDate = new Date();
@@ -95,7 +102,7 @@ export function TaskModal({
         projectId: availableProjects[0]?.id || '',
         startDate: defaultStartDate,
         endDate: defaultEndDate,
-        hours: 8
+        estimatedHours: 8
       });
     }
     setErrors({});
@@ -395,7 +402,7 @@ export function TaskModal({
                         setFormData(prev => ({ ...prev, endDate: date }));
                       }
                     }}
-                    disabled={(date) => date <= formData.startDate}
+                    disabled={(date) => date < formData.startDate}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
@@ -403,18 +410,33 @@ export function TaskModal({
               </Popover>
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="hours" className="text-sm font-medium">Hours</Label>
               <Input
                 id="hours"
                 type="number"
                 min="0.5"
                 step="0.5"
-                value={formData.hours}
+                value={formData.estimatedHours}
                 onChange={(e) => setFormData(prev => ({ ...prev, hours: parseFloat(e.target.value) || 0 }))}
-                disabled={!canEdit('hours')}
+                disabled={!canEdit('estimatedHours')}
                 placeholder="Enter hours"
               />
+            </div> */}
+
+            <div className="space-y-2">
+            <Label htmlFor="estimatedHours" className="text-sm font-medium">Estimated Hours</Label>
+            <Input
+              id="estimatedHours"
+              type="number"
+              value={formData.estimatedHours}
+              readOnly
+              className="bg-muted"
+              placeholder="Calculated automatically"
+            />
+            <span className="text-sm text-muted-foreground">
+              Based on {calculateBusinessDays(formData.startDate, formData.endDate, holidays)} working days
+            </span>
             </div>
           </div>
 
@@ -448,7 +470,7 @@ export function TaskModal({
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={Object.keys(errors).length > 0 || isSaving}>
+          <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
               <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current" />
             ) : (

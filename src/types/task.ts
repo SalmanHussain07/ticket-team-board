@@ -32,7 +32,7 @@ export interface Project {
   startDate: Date;
   endDate: Date;
   estimatedHours: number;
-  createdAt: string;
+  createdAt: Date;
 }
 
 // export interface Task {
@@ -61,10 +61,14 @@ export interface Task {
   project: string;
   startDate: Date;
   endDate: Date;
-  hours: number;
+  estimatedHours: number;
   projectId: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
+  project_start: Date;
+  project_end: Date;
+  assigneeRole: string;
+  assignorId: string;
 
 }
 
@@ -77,7 +81,7 @@ export interface TaskFormData {
   projectId: string;
   startDate: Date;
   endDate: Date;
-  hours: number;
+  estimatedHours: number;
 }
 
 export interface Holiday {

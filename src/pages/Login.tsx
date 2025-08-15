@@ -39,6 +39,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                 password,
       });
 
+      console.log('Login response:', response);
+
       if (response && !response.isError && response.data?.token) {
                 // localStorage.setItem('user', email);
                 // localStorage.setItem('isloggedin', 'true');
@@ -66,7 +68,21 @@ const handleSubmit = async (e: React.FormEvent) => {
   };
 
 
+const isValidEmail = (value) => {
+  return /\S+@\S+\.\S+/.test(value); // simple email regex
+};
 
+const handleChange = (e) => {
+  const value = e.target.value;
+  setEmail(value);
+
+  // Only show error if it contains "@" but is not a valid email
+  if (value.includes("@") && !isValidEmail(value)) {
+    setError("Invalid email address");
+  } else {
+    setError("");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
@@ -141,10 +157,12 @@ const handleSubmit = async (e: React.FormEvent) => {
                     type="text"
                     placeholder="Enter your work username/email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    // onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleChange}
                     required
                     className="h-11"
                   />
+                  {error && <p className="text-red-500 text-sm">{error}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
