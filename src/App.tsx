@@ -7,6 +7,12 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import TaskDetails from "./pages/TaskDetails";
+import PrivateRoute from "./components/PrivateRoute";
+
+
+// localStorage.removeItem("token"); // Remove this line when deploying
+// localStorage.removeItem("user"); // Remove this line when deploying
+// localStorage.removeItem("isloggedin"); // Remove this line when deploying
 
 const queryClient = new QueryClient();
 
@@ -17,7 +23,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={ <PrivateRoute> <Index /> </PrivateRoute>} />
           <Route path="/login" element={<Login />} />
           <Route path="/task/:taskId" element={<TaskDetails />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

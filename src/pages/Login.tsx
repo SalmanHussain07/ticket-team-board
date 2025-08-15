@@ -5,16 +5,84 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { TrendingUp, Shield, Users, BarChart3 } from "lucide-react";
+import { login } from "@/api/authApi";
+import { api } from "@/api/api";
+// import { useRouter } from "next/navigation";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { HttpClient } from "@/api/communicator";
+import { User } from "@/types/task";
+
+interface ResponseDto {
+    token: string;
+    user: User;
+}
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // const router = useRouter();
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log("Login attempt:", { email, password });
+    // setError("");
+
+    try {
+      setError(null);
+      // const res = await api.post("Auth/login", { username: email, password }); // new API usage
+
+      const response = await HttpClient.POST<ResponseDto>('/api/Auth/login', {
+                username: email,
+                password,
+      });
+
+      console.log('Login response:', response);
+
+      if (response && !response.isError && response.data?.token) {
+                // localStorage.setItem('user', email);
+                // localStorage.setItem('isloggedin', 'true');
+                localStorage.setItem('token', response.data.token); // Store actual token
+                localStorage.setItem('user', JSON.stringify(response.data.user));
+
+                setEmail('');
+                setPassword('');
+                // localStorage.setItem('sessionTime', response.data.data.toString());
+                navigate('/');
+            } else {
+                // setError('Invalid credentials');
+                alert("Login failed: Invalid credentials");
+            }
+
+      // localStorage.setItem("token", res.token); // store token globally
+      // router.push("/"); // or wherever you want to go after login
+      // navigate("/");
+      // window.location.href = "/";
+    } catch (error) {
+        console.error('Login error:', error);
+        // setError('An error occurred during login. Please try again.');
+        alert("Login failed: " + error.message);
+    }
   };
+
+
+const isValidEmail = (value) => {
+  return /\S+@\S+\.\S+/.test(value); // simple email regex
+};
+
+const handleChange = (e) => {
+  const value = e.target.value;
+  setEmail(value);
+
+  // Only show error if it contains "@" but is not a valid email
+  if (value.includes("@") && !isValidEmail(value)) {
+    setError("Invalid email address");
+  } else {
+    setError("");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
@@ -83,16 +151,18 @@ const Login = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">Username/Email Address</Label>
                   <Input
                     id="email"
-                    type="email"
-                    placeholder="Enter your work email"
+                    type="text"
+                    placeholder="Enter your work username/email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    // onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleChange}
                     required
                     className="h-11"
                   />
+                  {error && <p className="text-red-500 text-sm">{error}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
@@ -111,7 +181,7 @@ const Login = () => {
                 </Button>
               </form>
               
-              <div className="mt-6 text-center space-y-4">
+              {/* <div className="mt-6 text-center space-y-4">
                 <div className="text-sm text-muted-foreground">
                   Forgot your password? <a href="#" className="text-primary hover:underline">Reset here</a>
                 </div>
@@ -123,7 +193,7 @@ const Login = () => {
                     ← Back to Dashboard
                   </Link>
                 </div>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
         </div>

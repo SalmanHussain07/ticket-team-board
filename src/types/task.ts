@@ -2,13 +2,27 @@ export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-export type UserRole = 'manager' | 'developer';
+// export type UserRole = 'admin' | 'manager' | 'developer';
+
+export interface UserRole {
+  id: number;
+  name: string;  // e.g., "admin"
+}
+
+// export interface User {
+//   id: string;
+//   name: string;
+//   role: UserRole;
+//   email: string;
+// }
 
 export interface User {
   id: string;
   name: string;
-  role: UserRole;
+  full_name: string;
+  role: string;
   email: string;
+  created_at: string;
 }
 
 export interface Project {
@@ -21,20 +35,41 @@ export interface Project {
   createdAt: Date;
 }
 
+// export interface Task {
+//   id: string;
+//   name: string;
+//   description: string;
+//   status: TaskStatus;
+//   priority: TaskPriority;
+//   reporter: User;
+//   assignee: User | null;
+//   project: Project;
+//   createdAt: Date;
+//   updatedAt: Date;
+// }
+
 export interface Task {
   id: string;
   name: string;
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
-  reporter: User;
-  assignee: User | null;
-  project: Project;
+  assignor: string;
+  assignorRole: string;
+  assignee: string;
+  assigneeId: string;
+  project: string;
   startDate: Date;
   endDate: Date;
-  hours: number;
-  createdAt: Date;
-  updatedAt: Date;
+  estimatedHours: number;
+  projectId: string;
+  created_at: Date;
+  updated_at: Date;
+  project_start: Date;
+  project_end: Date;
+  assigneeRole: string;
+  assignorId: string;
+
 }
 
 export interface TaskFormData {
@@ -46,7 +81,7 @@ export interface TaskFormData {
   projectId: string;
   startDate: Date;
   endDate: Date;
-  hours: number;
+  estimatedHours: number;
 }
 
 export interface Holiday {
