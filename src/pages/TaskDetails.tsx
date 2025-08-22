@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Clock, MessageSquare, Plus, User, Calendar, AlertTriangle } from "lucide-react";
-import { Task, User as UserType } from "@/types/task";
+import { Column, Task, User as UserType } from "@/types/task";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "react-router-dom";
 import { HttpClient } from "@/api/communicator";
@@ -25,7 +25,7 @@ interface Comment {
 }
 
 // interface TimeLog {
-//   id: string;
+//   id: string; 
 //   description: string;
 //   hours: number;
 //   author: UserType;
@@ -69,9 +69,10 @@ export default function TaskDetails() {
 
   
 const location = useLocation();
-const passedTask = location.state?.task as Task | undefined;
+// const passedTask = location.state?.task as Task | undefined;
+ const { task, column } = location.state as { task: Task; column: Column };
 
-const [task, setTask] = useState<Task | undefined>(passedTask);
+// const [task, setTask] = useState<Task | undefined>(passedTask);
   
   // Mock task data - in real app this would be fetched by ID
   // const [task] = useState<Task>({
@@ -292,12 +293,12 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Tasks
+              Go Back
             </Button>
             <Separator orientation="vertical" className="h-6" />
             <div>
               <h1 className="text-xl font-bold">{task.name}</h1>
-              <p className="text-sm text-muted-foreground">{task.id}</p>
+              {/* <p className="text-sm text-muted-foreground">{task.id}</p> */}
             </div>
           </div>
         </div>
@@ -316,9 +317,14 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
                     <p className="text-muted-foreground mt-2">{task.description}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={`${statusConfig[task.status].bg} ${statusConfig[task.status].text}`}>
+                    {/* <Badge className={`${statusConfig[task.status].bg} ${statusConfig[task.status].text}`}>
                       {statusConfig[task.status].label}
+                    </Badge> */}
+                    <Badge style={{ backgroundColor:  `${column.color}33`, color: "black" }}>
+                      {column.name}
                     </Badge>
+
+
                     <Badge className={`${priorityConfig[task.priority].bg} ${priorityConfig[task.priority].text}`}>
                       {priorityConfig[task.priority].label}
                     </Badge>

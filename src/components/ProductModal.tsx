@@ -11,85 +11,67 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Project, Holiday, Product } from "@/types/task";
 import { calculateEstimatedHours } from "@/lib/business-days";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export interface ProjectFormData {
+export interface ProductFormData {
   name: string;
   description: string;
-  productId: string;
-  startDate: Date;
-  endDate: Date;
-  estimatedHours: number;
 }
 
-interface ProjectModalProps {
-  project: Project | null;
+interface ProductModalProps {
+  product: Product | null;
   isOpen: boolean;
-  availableProducts: Product[];
   onClose: () => void;
-  onSave: (projectData: ProjectFormData) => void;
+  onSave: (producttData: ProductFormData) => void;
   holidays: Holiday[];
   isCreating?: boolean;
   isSaving?: boolean;
 }
 
-export function ProjectModal({ project, isOpen, availableProducts, onClose, onSave, holidays, isCreating, isSaving = false }: ProjectModalProps) {
-  const [formData, setFormData] = useState<ProjectFormData>({
+export function ProductModal({ product, isOpen, onClose, onSave, holidays, isCreating, isSaving = false }: ProductModalProps) {
+  const [formData, setFormData] = useState<ProductFormData>({
     name: '',
-    description: '',
-    productId: '',
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-    estimatedHours: 0
+    description: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen) {
-      if (project && !isCreating) {
+      if (product && !isCreating) {
         setFormData({
-          name: project.name,
-          description: project.description,
-          productId: project.productId,
-          startDate: project.startDate,
-          endDate: project.endDate,
-          estimatedHours: project.estimatedHours
+          name: product.name,
+          description: product.description
         });
       } else {
         setFormData({
           name: '',
-          description: '',
-          productId: '',
-          startDate: new Date(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          estimatedHours: 0
+          description: ''
         });
       }
       setErrors({});
     }
-  }, [isOpen, project, isCreating]);
+  }, [isOpen, product, isCreating]);
 
-  useEffect(() => {
-    if (formData.startDate && formData.endDate && formData.endDate >= formData.startDate) {
-      const estimatedHours = calculateEstimatedHours(formData.startDate, formData.endDate, holidays);
-      setFormData(prev => ({ ...prev, estimatedHours }));
-    }
-  }, [formData.startDate, formData.endDate, holidays]);
+//   useEffect(() => {
+//     if (formData.startDate && formData.endDate && formData.endDate >= formData.startDate) {
+//       const estimatedHours = calculateEstimatedHours(formData.startDate, formData.endDate, holidays);
+//       setFormData(prev => ({ ...prev, estimatedHours }));
+//     }
+//   }, [formData.startDate, formData.endDate, holidays]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Project name is required';
+      newErrors.name = 'Product name is required';
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'Project description is required';
+      newErrors.description = 'Product description is required';
     }
 
-    if (formData.endDate <= formData.startDate) {
-      newErrors.endDate = 'End date must be after start date';
-    }
+    // if (formData.endDate <= formData.startDate) {
+    //   newErrors.endDate = 'End date must be after start date';
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -102,59 +84,35 @@ export function ProjectModal({ project, isOpen, availableProducts, onClose, onSa
     }
   };
 
-  const handleDateChange = (field: 'startDate' | 'endDate', date: Date | undefined) => {
-    if (date) {
-      setFormData(prev => ({ ...prev, [field]: date }));
-    }
-  };
+//   const handleDateChange = (field: 'startDate' | 'endDate', date: Date | undefined) => {
+//     if (date) {
+//       setFormData(prev => ({ ...prev, [field]: date }));
+//     }
+//   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
-            {isCreating ? 'Create New Project' : 'Edit Project'}
+            {isCreating ? 'Create New Product' : 'Edit Product'}
           </DialogTitle>
           <DialogDescription>
             {isCreating 
-              ? 'Enter the details for the new project. The estimated hours will be calculated automatically based on working days.'
-              : 'Update the project details. The estimated hours will be recalculated automatically.'
+              ? 'Enter the details for the new product.'
+              : 'Update the product details.'
             }
           </DialogDescription>
         </DialogHeader>
 
-        {/* Product */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Product *</Label>
-            <Select
-              value={formData.productId}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, productId: value }))}
-              // disabled={!canEdit('projectId')}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select product..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableProducts.map(product => (
-                  <SelectItem key={product.id} value={product.id}>
-                    <div className="space-y-1">
-                      <div className="font-medium">{product.name}</div>
-                      {/* <div className="text-sm text-muted-foreground">{product.description}</div> */}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
         <div className="grid gap-6 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Project Name</Label>
+            <Label htmlFor="name">Product Name</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter project name"
+              placeholder="Enter product name"
               disabled={isSaving}
             />
             {errors.name && <span className="text-sm text-destructive">{errors.name}</span>}
@@ -166,14 +124,14 @@ export function ProjectModal({ project, isOpen, availableProducts, onClose, onSa
               id="description"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Enter project description"
+              placeholder="Enter product description"
               disabled={isSaving}
               rows={3}
             />
             {errors.description && <span className="text-sm text-destructive">{errors.description}</span>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label>Start Date</Label>
               <Popover>
@@ -230,11 +188,11 @@ export function ProjectModal({ project, isOpen, availableProducts, onClose, onSa
                   />
                 </PopoverContent>
               </Popover>
-              {/* {errors.endDate && <span className="text-sm text-destructive">{errors.endDate}</span>} */}
+              {errors.endDate && <span className="text-sm text-destructive">{errors.endDate}</span>}
             </div>
-          </div>
+          </div> */}
 
-          <div className="grid gap-2">
+          {/* <div className="grid gap-2">
             <Label htmlFor="estimatedHours">Estimated Hours</Label>
             <Input
               id="estimatedHours"
@@ -247,7 +205,7 @@ export function ProjectModal({ project, isOpen, availableProducts, onClose, onSa
             <span className="text-sm text-muted-foreground">
               Calculated based on working days (excluding weekends and holidays): {formData.estimatedHours} hours
             </span>
-          </div>
+          </div> */}
         </div>
 
         <div className="flex justify-end gap-2">
@@ -258,7 +216,7 @@ export function ProjectModal({ project, isOpen, availableProducts, onClose, onSa
             {isSaving ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
             ) : null}
-            {isCreating ? 'Create Project' : 'Save Changes'}
+            {isCreating ? 'Create Product' : 'Save Changes'}
           </Button>
         </div>
       </DialogContent>

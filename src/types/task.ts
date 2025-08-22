@@ -1,7 +1,13 @@
-export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
+// export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+export interface Column {
+  id: number;
+  name: string;
+  description: string;
+  color: string; // e.g., "bg-blue-500"
+}
 // export type UserRole = 'admin' | 'manager' | 'developer';
 
 export interface UserRole {
@@ -29,10 +35,17 @@ export interface Project {
   id: string;
   name: string;
   description: string;
+  productId: string;
   startDate: Date;
   endDate: Date;
   estimatedHours: number;
   createdAt: Date;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
 }
 
 // export interface Task {
@@ -52,7 +65,7 @@ export interface Task {
   id: string;
   name: string;
   description: string;
-  status: TaskStatus;
+  status: string;
   priority: TaskPriority;
   assignor: string;
   assignorRole: string;
@@ -72,10 +85,17 @@ export interface Task {
 
 }
 
+export interface KanbanColumn {
+  status: string;
+  title: string;
+  description: string;
+  color: string;
+}
+
 export interface TaskFormData {
   name: string;
   description: string;
-  status: TaskStatus;
+  status: string;
   priority: TaskPriority;
   assigneeId: string | null;
   projectId: string;
