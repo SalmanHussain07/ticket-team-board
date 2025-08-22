@@ -12,11 +12,8 @@ export function calculateBusinessDays(
   endDate: Date,
   holidays: Holiday[] = []
 ): number {
-  // if (startDate >= endDate) {
-  //   return 0;
-  // }
-  if (startDate > endDate) {
-  return 0;
+  if (startDate >= endDate) {
+    return 0;
   }
 
   const holidayDates = new Set(

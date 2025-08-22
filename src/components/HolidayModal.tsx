@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,79 +9,90 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Holiday, HolidayFormData } from "@/types/task";
-import { toast } from "sonner";
 
 interface HolidayModalProps {
-  mode: 'create' | 'edit';
-  holiday?: Holiday;
-  onSave: (data: HolidayFormData) => void;
-  trigger: React.ReactNode;
+  holiday: Holiday | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (holidayData: HolidayFormData) => void;
+  isCreating?: boolean;
+  isSaving?: boolean;
 }
 
-export function HolidayModal({ mode, holiday, onSave, trigger }: HolidayModalProps) {
-  const [open, setOpen] = useState(false);
+export function HolidayModal({ holiday, isOpen, onClose, onSave, isCreating, isSaving = false }: HolidayModalProps) {
   const [formData, setFormData] = useState<HolidayFormData>({
-    name: holiday?.name || '',
-    date: holiday?.date || new Date()
+    name: '',
+    date: new Date()
   });
+  const [errors, setErrors] = useState<Partial<HolidayFormData>>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  useEffect(() => {
+    if (isOpen) {
+      if (holiday && !isCreating) {
+        setFormData({
+          name: holiday.name,
+          date: holiday.date
+        });
+      } else {
+        setFormData({
+          name: '',
+          date: new Date()
+        });
+      }
+      setErrors({});
+    }
+  }, [isOpen, holiday, isCreating]);
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<HolidayFormData> = {};
+
     if (!formData.name.trim()) {
-      toast.error("Holiday name is required");
-      return;
+      newErrors.name = 'Holiday name is required';
     }
 
-    onSave(formData);
-    setOpen(false);
-    
-    if (mode === 'create') {
-      setFormData({ name: '', date: new Date() });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = () => {
+    if (validateForm()) {
+      onSave(formData);
+      onClose();
     }
-    
-    toast.success(`Holiday ${mode === 'create' ? 'created' : 'updated'} successfully`);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger}
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' ? 'Create Holiday' : 'Edit Holiday'}
+            {isCreating ? 'Add Gazetted Holiday' : 'Edit Holiday'}
           </DialogTitle>
           <DialogDescription>
-            {mode === 'create' 
-              ? 'Add a new company holiday or non-working day.'
-              : 'Update the holiday information.'
-            }
+            {isCreating ? 'Add a new gazetted holiday to the system.' : 'Edit holiday details.'}
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
             <Label htmlFor="name">Holiday Name</Label>
             <Input
               id="name"
-              placeholder="Enter holiday name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
+              placeholder="Enter holiday name"
             />
+            {errors.name && <span className="text-sm text-destructive">{errors.name}</span>}
           </div>
 
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label>Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  type="button"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "justify-start text-left font-normal",
                     !formData.date && "text-muted-foreground"
                   )}
                 >
@@ -95,24 +106,28 @@ export function HolidayModal({ mode, holiday, onSave, trigger }: HolidayModalPro
                   selected={formData.date}
                   onSelect={(date) => date && setFormData({ ...formData, date })}
                   initialFocus
+                  className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
             </Popover>
           </div>
+        </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">
-              {mode === 'create' ? 'Create Holiday' : 'Update Holiday'}
-            </Button>
-          </div>
-        </form>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current" />
+                Saving...
+              </>
+            ) : (
+              isCreating ? 'Add Holiday' : 'Save Changes'
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

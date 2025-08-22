@@ -12,15 +12,12 @@ import { cn } from "@/lib/utils";
 
 export interface UserFormData {
   name: string;
-  full_name: string;
   email: string;
-  password: string;
-  role: string;
+  role: UserRole;
 }
 
 interface UserModalProps {
   user: User | null;
-  roles: UserRole[];
   isOpen: boolean;
   onClose: () => void;
   onSave: (userData: UserFormData) => void;
@@ -28,15 +25,13 @@ interface UserModalProps {
   isSaving?: boolean;
 }
 
-// const roleOptions: { value: UserRole; label: string }[] = [
-//   { value: 'manager', label: 'Manager' },
-//   { value: 'developer', label: 'Developer' },
-//   { value: 'admin', label: 'Admin' }
-// ];
+const roleOptions: { value: UserRole; label: string }[] = [
+  { value: 'manager', label: 'Manager' },
+  { value: 'developer', label: 'Developer' }
+];
 
 export function UserModal({ 
-  user,
-  roles, 
+  user, 
   isOpen, 
   onClose, 
   onSave, 
@@ -44,10 +39,8 @@ export function UserModal({
   isSaving = false
 }: UserModalProps) {
   const [formData, setFormData] = useState<UserFormData>({
-    full_name: '',
     name: '',
     email: '',
-    password: '',
     role: 'developer'
   });
 
@@ -56,18 +49,14 @@ export function UserModal({
   useEffect(() => {
     if (user) {
       setFormData({
-        full_name: user.full_name,
         name: user.name,
         email: user.email,
-        password: '', // Password should not be pre-filled
         role: user.role
       });
     } else if (isCreating) {
       setFormData({
-        full_name: '',
         name: '',
         email: '',
-        password: '',
         role: 'developer'
       });
     }
@@ -100,7 +89,7 @@ export function UserModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isCreating ? 'Create New User' : 'Edit User'}
@@ -132,37 +121,17 @@ export function UserModal({
             </div>
           )}
 
-          {/* Full Name */}
-          <div className="space-y-2">
-            <Label htmlFor="full_name" className="text-sm font-medium">
-              Full Name *
-            </Label>
-            <Input
-              id="full_name"
-              value={formData.full_name}
-              onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-              className={cn(errors.full_name && "border-destructive")}
-              placeholder="Enter full name..."
-            />
-            {errors.full_name && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                {errors.full_name}
-              </p>
-            )}
-          </div>
-
-          {/* UserName */}
+          {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium">
-              Username *
+              Full Name *
             </Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               className={cn(errors.name && "border-destructive")}
-              placeholder="Enter username..."
+              placeholder="Enter full name..."
             />
             {errors.name && (
               <p className="text-sm text-destructive flex items-center gap-1">
@@ -171,7 +140,6 @@ export function UserModal({
               </p>
             )}
           </div>
-          
 
           {/* Email */}
           <div className="space-y-2">
@@ -194,52 +162,29 @@ export function UserModal({
             )}
           </div>
 
-          {/* Password */}
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium">
-              Password *
-            </Label>
-            <Input
-              id="password"
-              value={formData.password}
-              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              className={cn(errors.password && "border-destructive")}
-              placeholder="Enter password..."
-            />
-            {errors.password && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                {errors.password}
-              </p>
-            )}
-          </div>
-
           {/* Role */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Role</Label>
             <Select
               value={formData.role}
-              onValueChange={(value: string) => setFormData(prev => ({ ...prev, role: value }))}
+              onValueChange={(value: UserRole) => setFormData(prev => ({ ...prev, role: value }))}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {roles.map(role => (
-                  <SelectItem key={role.id} value={role.name}>
+                {roleOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         "w-2 h-2 rounded-full",
-                        role.name === 'manager' ? "bg-blue-500" : 
-                        role.name === 'admin' ? "bg-green-500" : 
-                        "bg-gray-500"
+                        option.value === 'manager' ? "bg-blue-500" : "bg-green-500"
                       )} />
-                      {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                      {option.label}
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
-
             </Select>
           </div>
         </div>

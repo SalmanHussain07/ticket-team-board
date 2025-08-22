@@ -12,9 +12,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import { isDateRangeWithin } from "@/lib/business-days";
 import { Save, X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isDateRangeWithin, calculateEstimatedHours, calculateBusinessDays } from "@/lib/business-days";
 
 interface TaskModalProps {
   task: Task | null;
@@ -64,17 +64,10 @@ export function TaskModal({
     projectId: availableProjects[0]?.id || '',
     startDate: new Date(),
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-    estimatedHours: 0
+    hours: 8
   });
 
   const [errors, setErrors] = useState<Partial<TaskFormData>>({});
-
-  useEffect(() => {
-  if (formData.startDate && formData.endDate && formData.endDate >= formData.startDate) {
-    const estimatedHours = calculateEstimatedHours(formData.startDate, formData.endDate, holidays);
-    setFormData(prev => ({ ...prev, estimatedHours }));
-  }
-}, [formData.startDate, formData.endDate, holidays]);
 
   useEffect(() => {
     if (task) {
@@ -83,11 +76,11 @@ export function TaskModal({
         description: task.description,
         status: task.status,
         priority: task.priority,
-        assigneeId: task.assigneeId || null, //giving name rn cz dont hv ID
-        projectId: task.projectId,  // Assuming task.project is a string ID even tho its a name ( I DONT HAVE ID),
+        assigneeId: task.assignee?.id || null,
+        projectId: task.project.id,
         startDate: task.startDate,
         endDate: task.endDate,
-        estimatedHours: task.estimatedHours
+        hours: task.hours
       });
     } else if (isCreating) {
       const defaultStartDate = new Date();
@@ -102,13 +95,13 @@ export function TaskModal({
         projectId: availableProjects[0]?.id || '',
         startDate: defaultStartDate,
         endDate: defaultEndDate,
-        estimatedHours: 8
+        hours: 8
       });
     }
     setErrors({});
   }, [task, isCreating, isOpen]);
 
-  const canEditAllFields = ['manager', 'admin'].includes(currentUser.role);
+  const canEditAllFields = currentUser.role === 'manager';
   const canEditLimitedFields = currentUser.role === 'developer';
 
   const validateForm = (): boolean => {
@@ -314,14 +307,14 @@ export function TaskModal({
               <Label className="text-sm font-medium">Reporter</Label>
               <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
                 <Avatar className="h-6 w-6">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignor}`} />
+                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.reporter.name}`} />
                   <AvatarFallback className="text-xs">
-                    {task.assignor.split(' ').map(n => n[0]).join('')}
+                    {task.reporter.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
-                <span className="font-medium">{task.assignor}</span>
+                <span className="font-medium">{task.reporter.name}</span>
                 <Badge variant="outline" className="text-xs">
-                  {task.assignorRole} 
+                  {task.reporter.role}
                 </Badge>
               </div>
             </div>
@@ -402,7 +395,7 @@ export function TaskModal({
                         setFormData(prev => ({ ...prev, endDate: date }));
                       }
                     }}
-                    disabled={(date) => date < formData.startDate}
+                    disabled={(date) => date <= formData.startDate}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
@@ -410,33 +403,18 @@ export function TaskModal({
               </Popover>
             </div>
 
-            {/* <div className="space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="hours" className="text-sm font-medium">Hours</Label>
               <Input
                 id="hours"
                 type="number"
                 min="0.5"
                 step="0.5"
-                value={formData.estimatedHours}
+                value={formData.hours}
                 onChange={(e) => setFormData(prev => ({ ...prev, hours: parseFloat(e.target.value) || 0 }))}
-                disabled={!canEdit('estimatedHours')}
+                disabled={!canEdit('hours')}
                 placeholder="Enter hours"
               />
-            </div> */}
-
-            <div className="space-y-2">
-            <Label htmlFor="estimatedHours" className="text-sm font-medium">Estimated Hours</Label>
-            <Input
-              id="estimatedHours"
-              type="number"
-              value={formData.estimatedHours}
-              readOnly
-              className="bg-muted"
-              placeholder="Calculated automatically"
-            />
-            <span className="text-sm text-muted-foreground">
-              Based on {calculateBusinessDays(formData.startDate, formData.endDate, holidays)} working days
-            </span>
             </div>
           </div>
 
@@ -470,7 +448,7 @@ export function TaskModal({
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button onClick={handleSave} disabled={Object.keys(errors).length > 0 || isSaving}>
             {isSaving ? (
               <div className="animate-spin rounded-full h-4 w-4 mr-2 border-b-2 border-current" />
             ) : (

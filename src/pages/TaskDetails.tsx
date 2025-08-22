@@ -11,105 +11,80 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Clock, MessageSquare, Plus, User, Calendar, AlertTriangle } from "lucide-react";
 import { Task, User as UserType } from "@/types/task";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "react-router-dom";
-import { HttpClient } from "@/api/communicator";
 
 interface Comment {
   id: string;
-  taskId: string;
-  userId: string;
-  userName: string;
-  comment: string;
-  hours: number;
-  commentedAt: Date;
+  content: string;
+  author: UserType;
+  createdAt: Date;
 }
-
-// interface TimeLog {
-//   id: string;
-//   description: string;
-//   hours: number;
-//   author: UserType;
-//   createdAt: Date;
-// }
 
 interface TimeLog {
   id: string;
-  taskId: string;
-  userId: string;
-  userName: string;
   description: string;
   hours: number;
-  loggedAt: Date;
+  author: UserType;
+  createdAt: Date;
 }
 
 // Mock data - in real app this would come from API
-// const mockComments: Comment[] = [
-//   {
-//     id: '1',
-//     content: 'Initial task setup completed. Started working on authentication flow.',
-//     author: { id: '2', name: 'Mike Chen', role: 'developer', email: 'mike@company.com' },
-//     createdAt: new Date('2024-01-12T10:30:00')
-//   }
-// ];
+const mockComments: Comment[] = [
+  {
+    id: '1',
+    content: 'Initial task setup completed. Started working on authentication flow.',
+    author: { id: '2', name: 'Mike Chen', role: 'developer', email: 'mike@company.com' },
+    createdAt: new Date('2024-01-12T10:30:00')
+  }
+];
 
-// const mockTimeLogs: TimeLog[] = [
-//   {
-//     id: '1',
-//     description: 'Set up authentication backend',
-//     hours: 4,
-//     author: { id: '2', name: 'Mike Chen', role: 'developer', email: 'mike@company.com' },
-//     createdAt: new Date('2024-01-12T14:00:00')
-//   }
-// ];
+const mockTimeLogs: TimeLog[] = [
+  {
+    id: '1',
+    description: 'Set up authentication backend',
+    hours: 4,
+    author: { id: '2', name: 'Mike Chen', role: 'developer', email: 'mike@company.com' },
+    createdAt: new Date('2024-01-12T14:00:00')
+  }
+];
 
 export default function TaskDetails() {
   const { taskId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  
-const location = useLocation();
-const passedTask = location.state?.task as Task | undefined;
-
-const [task, setTask] = useState<Task | undefined>(passedTask);
   
   // Mock task data - in real app this would be fetched by ID
-  // const [task] = useState<Task>({
-  //   id: 'TASK-001',
-  //   name: 'Implement user authentication',
-  //   description: 'Add login and registration functionality with JWT tokens and secure password hashing.',
-  //   status: 'in-progress',
-  //   priority: 'high',
-  //   reporter: { id: '1', name: 'Sarah Johnson', role: 'manager', email: 'sarah@company.com' },
-  //   assignee: { id: '2', name: 'Mike Chen', role: 'developer', email: 'mike@company.com' },
-  //   project: {
-  //     id: '1',
-  //     name: 'E-commerce Platform',
-  //     description: 'Main e-commerce platform development',
-  //     startDate: new Date('2024-01-01'),
-  //     endDate: new Date('2024-06-30'),
-  //     estimatedHours: 960,
-  //     createdAt: new Date('2024-01-01')
-  //   },
-  //   startDate: new Date('2024-01-10'),
-  //   endDate: new Date('2024-01-15'),
-  //   hours: 32,
-  //   createdAt: new Date('2024-01-10'),
-  //   updatedAt: new Date('2024-01-12')
-  // });
+  const [task] = useState<Task>({
+    id: 'TASK-001',
+    name: 'Implement user authentication',
+    description: 'Add login and registration functionality with JWT tokens and secure password hashing.',
+    status: 'in-progress',
+    priority: 'high',
+    reporter: { id: '1', name: 'Sarah Johnson', role: 'manager', email: 'sarah@company.com' },
+    assignee: { id: '2', name: 'Mike Chen', role: 'developer', email: 'mike@company.com' },
+    project: {
+      id: '1',
+      name: 'E-commerce Platform',
+      description: 'Main e-commerce platform development',
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-06-30'),
+      estimatedHours: 960,
+      createdAt: new Date('2024-01-01')
+    },
+    startDate: new Date('2024-01-10'),
+    endDate: new Date('2024-01-15'),
+    hours: 32,
+    createdAt: new Date('2024-01-10'),
+    updatedAt: new Date('2024-01-12')
+  });
 
-  // const [comments, setComments] = useState<Comment[]>(mockComments);
-  const [comments, setComments] = useState<Comment[]>([]);
-  // const [timeLogs, setTimeLogs] = useState<TimeLog[]>(mockTimeLogs);
-   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
+  const [comments, setComments] = useState<Comment[]>(mockComments);
+  const [timeLogs, setTimeLogs] = useState<TimeLog[]>(mockTimeLogs);
   const [newComment, setNewComment] = useState('');
   const [newTimeLog, setNewTimeLog] = useState({ description: '', hours: '' });
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [isAddingTimeLog, setIsAddingTimeLog] = useState(false);
   
-  // const currentUser = { id: '2', name: 'Mike Chen', role: 'developer', email: 'mike@company.com' } as UserType;
-
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}') as UserType;
+  const currentUser = { id: '2', name: 'Mike Chen', role: 'developer', email: 'mike@company.com' } as UserType;
 
   const statusConfig = {
     'todo': { bg: 'bg-gray-100', text: 'text-gray-800', label: 'To Do' },
@@ -125,157 +100,55 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
     'urgent': { bg: 'bg-red-100', text: 'text-red-800', label: 'Urgent' }
   };
 
-
-  useEffect(() => {
-  const fetchLogs = async () => {
-    // if (!taskId) return;
-
-    const response = await HttpClient.GET<TimeLog[]>(`/api/TaskLog/${task.id}`);
-
-    if (!response.isError && response.data) {
-      const convertedLogs = response.data.map(log => ({
-        ...log,
-        loggedAt: new Date(log.loggedAt)
-      }));
-      setTimeLogs(convertedLogs);
-    } else {
-      console.error("Failed to fetch logs:", response.message);
-    }
-  };
-
-  const fetchComments = async () => {
-    // if (!taskId) return;
-
-    const response = await HttpClient.GET<Comment[]>(`/api/TaskComment/${task.id}`);
-
-    if (!response.isError && response.data) {
-      const convertedComments = response.data.map(comment => ({
-        ...comment,
-        commentedAt: new Date(comment.commentedAt)
-      }));
-      setComments(convertedComments);
-    } else {
-      console.error("Failed to fetch logs:", response.message);
-    }
-  };
-
-  fetchLogs();
-  fetchComments();
-}, [task.id]);
-
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
     
     setIsAddingComment(true);
     try {
-    const payload = {
-      taskId: task.id,
-      userId: currentUser.id,
-      comment: newComment
-    };
-
-    const response = await HttpClient.POST<Comment>("/api/TaskComment", payload);
-
-    if (!response.isError && response.data) {
-      const addedComment = {
-        ...response.data,
-        commentedAt: new Date(response.data.commentedAt)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const comment: Comment = {
+        id: `comment-${Date.now()}`,
+        content: newComment,
+        author: currentUser,
+        createdAt: new Date()
       };
-
-      setComments(prev => [...prev, addedComment]);
+      
+      setComments(prev => [...prev, comment]);
       setNewComment('');
-
       toast({
-        title: "Comment added"
+        title: "Comment added",
+        description: "Your comment has been added successfully.",
       });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Failed to log time",
-        description: response.message || "Something went wrong.",
-      });
+    } finally {
+      setIsAddingComment(false);
     }
-  } catch (error) {
-    console.error("comment error:", error);
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: "An error occurred while commenting.",
-    });
-  } finally {
-    setIsAddingComment(false);
-  }
   };
 
   const handleAddTimeLog = async () => {
-
     if (!newTimeLog.description.trim() || !newTimeLog.hours) return;
-
-  setIsAddingTimeLog(true);
-  try {
-    const payload = {
-      taskId: task.id,
-      userId: currentUser.id,
-      description: newTimeLog.description,
-      hours: parseFloat(newTimeLog.hours)
-    };
-
-    const response = await HttpClient.POST<TimeLog>("/api/TaskLog", payload);
-
-    if (!response.isError && response.data) {
-      const addedLog = {
-        ...response.data,
-        loggedAt: new Date(response.data.loggedAt)
+    
+    setIsAddingTimeLog(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const timeLog: TimeLog = {
+        id: `timelog-${Date.now()}`,
+        description: newTimeLog.description,
+        hours: parseFloat(newTimeLog.hours),
+        author: currentUser,
+        createdAt: new Date()
       };
-
-      setTimeLogs(prev => [...prev, addedLog]);
+      
+      setTimeLogs(prev => [...prev, timeLog]);
       setNewTimeLog({ description: '', hours: '' });
-
       toast({
         title: "Time logged",
-        description: `${addedLog.hours} hours logged successfully.`,
+        description: `${timeLog.hours} hours logged successfully.`,
       });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Failed to log time",
-        description: response.message || "Something went wrong.",
-      });
+    } finally {
+      setIsAddingTimeLog(false);
     }
-  } catch (error) {
-    console.error("Log time error:", error);
-    toast({
-      variant: "destructive",
-      title: "Error",
-      description: "An error occurred while logging time.",
-    });
-  } finally {
-    setIsAddingTimeLog(false);
-  }
-
-    // if (!newTimeLog.description.trim() || !newTimeLog.hours) return;
-    
-    // setIsAddingTimeLog(true);
-    // try {
-    //   await new Promise(resolve => setTimeout(resolve, 500));
-      
-    //   const timeLog: TimeLog = {
-    //     id: `timelog-${Date.now()}`,
-    //     description: newTimeLog.description,
-    //     hours: parseFloat(newTimeLog.hours),
-    //     author: currentUser,
-    //     createdAt: new Date()
-    //   };
-      
-    //   setTimeLogs(prev => [...prev, timeLog]);
-    //   setNewTimeLog({ description: '', hours: '' });
-    //   toast({
-    //     title: "Time logged",
-    //     description: `${timeLog.hours} hours logged successfully.`,
-    //   });
-    // } finally {
-    //   setIsAddingTimeLog(false);
-    // }
   };
 
   const totalLoggedHours = timeLogs.reduce((sum, log) => sum + log.hours, 0);
@@ -329,7 +202,7 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <div className="text-muted-foreground">Project</div>
-                    <div className="font-medium">{task.project}</div>
+                    <div className="font-medium">{task.project.name}</div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Start Date</div>
@@ -341,7 +214,7 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
                   </div>
                   <div>
                     <div className="text-muted-foreground">Estimated Hours</div>
-                    <div className="font-medium">{task.estimatedHours}h</div>
+                    <div className="font-medium">{task.hours}h</div>
                   </div>
                 </div>
                 
@@ -354,14 +227,14 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
                       <div className="text-sm text-muted-foreground">Reporter</div>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignor}`} />
+                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.reporter.name}`} />
                           <AvatarFallback className="text-xs">
-                            {task.assignor.split(' ').map(n => n[0]).join('')}
+                            {task.reporter.name.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-medium">{task.assignor}</span>
+                        <span className="text-sm font-medium">{task.reporter.name}</span>
                         <Badge variant="outline" className="text-xs">
-                          {task.assignorRole}
+                          {task.reporter.role}
                         </Badge>
                       </div>
                     </div>
@@ -374,14 +247,14 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
                         <div className="text-sm text-muted-foreground">Assignee</div>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignee}`} />
+                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignee.name}`} />
                             <AvatarFallback className="text-xs">
-                              {task.assignee.split(' ').map(n => n[0]).join('')}
+                              {task.assignee.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm font-medium">{task.assignee}</span>
+                          <span className="text-sm font-medium">{task.assignee.name}</span>
                           <Badge variant="outline" className="text-xs">
-                            {task.assigneeRole}
+                            {task.assignee.role}
                           </Badge>
                         </div>
                       </div>
@@ -404,16 +277,16 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
                   <div key={comment.id} className="border rounded-lg p-4 space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Avatar className="h-6 w-6">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.userName}`} />
+                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.author.name}`} />
                         <AvatarFallback className="text-xs">
-                          {comment.userName.split(' ').map(n => n[0]).join('')}
+                          {comment.author.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{comment.userName}</span>
+                      <span className="font-medium">{comment.author.name}</span>
                       <span className="text-muted-foreground">•</span>
-                      <span className="text-muted-foreground">{comment.commentedAt.toLocaleString()}</span>
+                      <span className="text-muted-foreground">{comment.createdAt.toLocaleString()}</span>
                     </div>
-                    <p className="text-sm">{comment.comment}</p>
+                    <p className="text-sm">{comment.content}</p>
                   </div>
                 ))}
                 
@@ -457,12 +330,12 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
                 <div className="text-center p-4 bg-muted rounded-lg">
                   <div className="text-2xl font-bold">{totalLoggedHours}h</div>
                   <div className="text-sm text-muted-foreground">
-                    of {task.estimatedHours}h estimated
+                    of {task.hours}h estimated
                   </div>
                   <div className="w-full bg-background rounded-full h-2 mt-2">
                     <div 
                       className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${Math.min((totalLoggedHours / task.estimatedHours) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((totalLoggedHours / task.hours) * 100, 100)}%` }}
                     />
                   </div>
                 </div>
@@ -472,19 +345,19 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${log.userName}`} />
+                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${log.author.name}`} />
                           <AvatarFallback className="text-xs">
-                            {log.userName.split(' ').map(n => n[0]).join('')}
+                            {log.author.name.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-medium">{log.userName}</span>
+                        <span className="text-sm font-medium">{log.author.name}</span>
                       </div>
                       <Badge variant="secondary" className="text-xs">
                         {log.hours}h
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{log.description}</p>
-                    <p className="text-xs text-muted-foreground">{log.loggedAt.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">{log.createdAt.toLocaleString()}</p>
                   </div>
                 ))}
                 
@@ -541,15 +414,15 @@ const [task, setTask] = useState<Task | undefined>(passedTask);
               <CardContent className="space-y-3 text-sm">
                 <div>
                   <div className="text-muted-foreground">Created</div>
-                  <div>{task.created_at.toLocaleDateString()}</div>
+                  <div>{task.createdAt.toLocaleDateString()}</div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">Last Updated</div>
-                  <div>{task.updated_at.toLocaleDateString()}</div>
+                  <div>{task.updatedAt.toLocaleDateString()}</div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">Project Duration</div>
-                  <div>{task.project_start.toLocaleDateString()} - {task.project_end.toLocaleDateString()}</div>
+                  <div>{task.project.startDate.toLocaleDateString()} - {task.project.endDate.toLocaleDateString()}</div>
                 </div>
                 {task.endDate < new Date() && task.status !== 'done' && (
                   <div className="flex items-center gap-2 text-destructive">

@@ -2,52 +2,24 @@ export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-// export type UserRole = 'admin' | 'manager' | 'developer';
-
-export interface UserRole {
-  id: number;
-  name: string;  // e.g., "admin"
-}
-
-// export interface User {
-//   id: string;
-//   name: string;
-//   role: UserRole;
-//   email: string;
-// }
+export type UserRole = 'manager' | 'developer';
 
 export interface User {
   id: string;
   name: string;
-  full_name: string;
-  role: string;
+  role: UserRole;
   email: string;
-  created_at: string;
 }
 
 export interface Project {
   id: string;
   name: string;
   description: string;
-  productId: string;
   startDate: Date;
   endDate: Date;
   estimatedHours: number;
   createdAt: Date;
 }
-
-// export interface Task {
-//   id: string;
-//   name: string;
-//   description: string;
-//   status: TaskStatus;
-//   priority: TaskPriority;
-//   reporter: User;
-//   assignee: User | null;
-//   project: Project;
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
 
 export interface Task {
   id: string;
@@ -55,22 +27,14 @@ export interface Task {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
-  assignor: string;
-  assignorRole: string;
-  assignee: string;
-  assigneeId: string;
-  project: string;
+  reporter: User;
+  assignee: User | null;
+  project: Project;
   startDate: Date;
   endDate: Date;
-  estimatedHours: number;
-  projectId: string;
-  created_at: Date;
-  updated_at: Date;
-  project_start: Date;
-  project_end: Date;
-  assigneeRole: string;
-  assignorId: string;
-
+  hours: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface TaskFormData {
@@ -82,16 +46,7 @@ export interface TaskFormData {
   projectId: string;
   startDate: Date;
   endDate: Date;
-  estimatedHours: number;
-}
-
-export interface ProjectFormData {
-  name: string;
-  description: string;
-  productId: string;
-  startDate: Date;
-  endDate: Date;
-  estimatedHours: number;
+  hours: number;
 }
 
 export interface Holiday {

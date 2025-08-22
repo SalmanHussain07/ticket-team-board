@@ -4,12 +4,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Calendar, User, Edit3 } from "lucide-react";
 import { Task } from "@/types/task";
-import { cn } from "@/lib/utils"; 
+import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
   task: Task;
   onEdit: (task: Task) => void;
-  onView: (task: Task) => void; 
   canEdit?: boolean;
 }
 
@@ -51,11 +50,9 @@ const priorityConfig = {
   }
 };
 
-export function TaskCard({ task, onEdit, onView, canEdit = true }: TaskCardProps) {
-  console.log("TaskCard rendered", { onView });
-  console.log("TaskCard rendered", { onEdit });
+export function TaskCard({ task, onEdit, canEdit = true }: TaskCardProps) {
   return (
-    <Card onClick={() => onView(task)} className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-gradient-to-br from-card via-card to-muted/30">
+    <Card className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-gradient-to-br from-card via-card to-muted/30">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
@@ -91,7 +88,7 @@ export function TaskCard({ task, onEdit, onView, canEdit = true }: TaskCardProps
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Project:</span>
-            <span className="font-medium text-foreground truncate">{task.project}</span>
+            <span className="font-medium text-foreground truncate">{task.project.name}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Due Date:</span>
@@ -103,24 +100,24 @@ export function TaskCard({ task, onEdit, onView, canEdit = true }: TaskCardProps
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <User className="h-3 w-3" />
             <span className="text-xs">Reporter:</span>
-            <span className="font-medium text-foreground">{task.assignor}</span>
+            <span className="font-medium text-foreground">{task.reporter.name}</span>
           </div>
           
           {task.assignee && (
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignee}`} />
+                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${task.assignee.name}`} />
                 <AvatarFallback className="text-xs bg-primary/10">
-                  {task.assignee.split(' ').map(n => n[0]).join('')}
+                  {task.assignee.name.split(' ').map(n => n[0]).join('')}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium text-foreground">{task.assignee}</span>
+              <span className="text-sm font-medium text-foreground">{task.assignee.name}</span>
             </div>
           )}
           
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            <span>Updated {new Date(task.updated_at).toLocaleDateString()}</span>
+            <span>Updated {new Date(task.updatedAt).toLocaleDateString()}</span>
           </div>
         </div>
       </CardContent>
