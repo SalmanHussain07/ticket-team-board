@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Task, TaskFormData, TaskStatus, TaskPriority, User, UserRole, Project, Holiday } from "@/types/task";
+import { Task, TaskFormData, TaskPriority, User, UserRole, Project, Holiday, KanbanColumn, Column } from "@/types/task";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -27,9 +27,10 @@ interface TaskModalProps {
   holidays: Holiday[];
   isCreating?: boolean;
   isSaving?: boolean;
+  columns: Column[]; // pass columns as a prop
 }
 
-const statusOptions: { value: TaskStatus; label: string }[] = [
+const statusOptions: { value: string; label: string }[] = [
   { value: 'todo', label: 'To Do' },
   { value: 'in-progress', label: 'In Progress' },
   { value: 'review', label: 'Review' },
@@ -53,7 +54,8 @@ export function TaskModal({
   availableProjects,
   holidays,
   isCreating = false,
-  isSaving = false
+  isSaving = false,
+  columns
 }: TaskModalProps) {
   const [formData, setFormData] = useState<TaskFormData>({
     name: '',
@@ -212,7 +214,7 @@ export function TaskModal({
                   <SelectItem key={project.id} value={project.id}>
                     <div className="space-y-1">
                       <div className="font-medium">{project.name}</div>
-                      <div className="text-sm text-muted-foreground">{project.description}</div>
+                      {/* <div className="text-sm text-muted-foreground">{project.description}</div> */}
                     </div>
                   </SelectItem>
                 ))}
@@ -226,18 +228,30 @@ export function TaskModal({
               <Label className="text-sm font-medium">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value: TaskStatus) => setFormData(prev => ({ ...prev, status: value }))}
+                onValueChange={(value: string) => setFormData(prev => ({ ...prev, status: value }))}
                 disabled={!canEdit('status')}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {statusOptions.map(option => (
+                  {/* {statusOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
-                  ))}
+                  ))} */}
+                  {columns.length === 0 ? (
+                  <SelectItem value="loading" disabled>
+                    Loading statuses...
+                  </SelectItem>
+                ) : (
+                  columns.map(option => (
+                    <SelectItem key={option.name} value={option.name}>
+                      {option.name}
+                    </SelectItem>
+                  ))
+                )}
+
                 </SelectContent>
               </Select>
             </div>

@@ -11,25 +11,48 @@ import { KanbanBoard } from "@/components/KanbanBoard";
 import { TaskModal } from "@/components/TaskModal";
 import { UserModal, UserFormData } from "@/components/UserModal";
 import { ProjectModal, ProjectFormData } from "@/components/ProjectModal";
+import { ProductModal, ProductFormData } from "@/components/ProductModal";
 import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
 import { TaskCard } from "@/components/TaskCard";
-import { Task, TaskFormData, User, Project, TaskStatus, TaskPriority, UserRole, Holiday, HolidayFormData } from "@/types/task";
+import { Task, TaskFormData, User, Project, Product, TaskPriority, UserRole, Holiday, HolidayFormData, Column, KanbanColumn } from "@/types/task";
 import { HolidayModal } from "@/components/HolidayModal";
-import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus, LogOut, Search } from "lucide-react";
+import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, Eye, UserPlus, Edit, Trash2, FolderPlus, LogOut, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { HttpClient } from "@/api/communicator";
 import { isDateRangeWithin } from "@/lib/business-days";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { TaskSidebar } from "@/components/Sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+// import { Badge } from "@/components/ui/badge"
+// import { Button } from "@/components/ui/button"
+// import { Eye, Edit, Search } from "lucide-react"
+// import { Input } from "@/components/ui/input"
 
 
 
 export default function Index() {
+  // const [activeTab, setActiveTab] = useState("kanban");
+  const [activeTab, setActiveTab] = useState(() => {
+  return localStorage.getItem("activeTab") || "kanban";
+});
+
   // const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   //  const [holidays, setHolidays] = useState<Holiday[]>(mockHolidays);
@@ -37,28 +60,41 @@ export default function Index() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
   const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [isCreatingHoliday, setIsCreatingHoliday] = useState(false);
   const [taskSearch, setTaskSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
+   const [productSearch, setProductSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [savingTask, setSavingTask] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
   const [savingHoliday, setSavingHoliday] = useState(false);
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [deletingProject, setDeletingProject] = useState<string | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [columns, setColumns] = useState<Column[]>([]);
 
+
+  // whenever tab changes, save it
+const handleTabChange = (tab: string) => {
+  setActiveTab(tab);
+  localStorage.setItem("activeTab", tab);
+};
 
 useEffect(() => {
   
@@ -66,7 +102,7 @@ useEffect(() => {
     try {
       const token = localStorage.getItem('token');
       const userString = localStorage.getItem('user');
-
+ 
       if (!token || !userString) {
         console.warn("User not logged in");
         return;
@@ -150,6 +186,41 @@ useEffect(() => {
         console.error("Failed to fetch holidays:", holidayResponse.message);
       }
 
+      // Fetch all products
+      const productResponse = await HttpClient.GET<Product[]>('/api/Product');
+
+      if (!productResponse.isError && productResponse.data) {
+        // setProjects(projectResponse.data);
+        // const convertedHolidays = holidayResponse.data.map(holiday => ({
+        //   ...holiday,
+        //   date: new Date(holiday.date),
+        // }));
+
+        setProducts(productResponse.data);
+      } else {
+        // console.error("Failed to fetch users:", projectResponse.message);
+        console.error("Failed to fetch products:", productResponse.message);
+      }
+
+
+      //fetch all statuses
+      const statusresponse = await HttpClient.GET<Column[]>("/api/TasksStatus");
+      
+          if (!response.isError && response.data) {
+            // Map backend Column -> frontend format
+            // const mapped = statusresponse.data.map((col) => ({
+            //   status: col.name as string,     // matches your Task.status field
+            //   title: col.name,                   // use name as title (or prettify it if needed)
+            //   description: col.description ?? "", // fallback to empty if null
+            //   color: col.color || "bg-gray-500", // default color if not provided
+            // }));
+      
+            // setColumns(mapped);
+            setColumns(statusresponse.data);
+          } else {
+            console.error("Failed to fetch task statuses:", statusresponse.message);
+          }
+
 
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -204,6 +275,13 @@ useEffect(() => {
     );
   }, [projects, projectSearch]);
 
+   const filteredProducts = useMemo(() => {
+    return products.filter(product => 
+      product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      product.description.toLowerCase().includes(productSearch.toLowerCase())
+    );
+  }, [products, productSearch]);
+
   const handleCreateTask = () => {
   if (!['manager', 'admin'].includes(currentUser.role)) {
     toast({
@@ -219,21 +297,7 @@ useEffect(() => {
   setIsTaskModalOpen(true);
   };
 
-
-  const handleEditTask = (task: Task) => {
-    setSelectedTask(task);
-    setIsCreatingTask(false);
-    setIsTaskModalOpen(true);
-    // window.location.href = `/task/${task.id}`;
-
-    // navigate(`/task/${task.id}`, { state: { task } });
-  };
-
-  const handleViewTask = (task: Task) => {
-  navigate(`/task/${task.id}`, { state: { task } }); // Your intended behavior
-};
-
-  const statusMap: Record<TaskStatus, number> = {
+    const statusMap: Record<string, number> = {
   'todo': 1,
   'in-progress': 2,
   'review': 3,
@@ -246,6 +310,73 @@ const priorityMap: Record<TaskPriority, number> = {
   'high': 3,
   'urgent': 4
 };
+
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+
+    const draggedTask = tasks.find(t => t.id === taskId);
+
+      const updatedTask = {
+      id: draggedTask.id,
+      title: draggedTask.name,
+      description: draggedTask.description,
+      // status_Id: statusMap[newStatus],
+      status_Id: columns.find((col) => col.name === newStatus)?.id,
+      priority_Id: priorityMap[draggedTask.priority],
+      project_Id: draggedTask.projectId,
+      assignee_Id: draggedTask.assigneeId,
+      startDate: draggedTask.startDate,
+      endDate: draggedTask.endDate,
+      estimatedHours: draggedTask.estimatedHours,
+      };
+      const response = await HttpClient.PUT<Task>(`/api/Tasks/${taskId}`, updatedTask);
+
+      if (!response.isError && response.data) {
+        const updateTask = {
+          ...response.data,
+          startDate: new Date(response.data.startDate),
+          endDate: new Date(response.data.endDate),
+          created_at: new Date(response.data.created_at),
+          updated_at: new Date(response.data.updated_at),
+          project_start: new Date(response.data.project_start),
+          project_end: new Date(response.data.project_end)
+        };
+      // setTasks(prev =>
+      //   prev.map(task => task.id === response.data!.id ? response.data! : task)
+      // );
+      setTasks(prev =>
+        // prev.map(task => task.id === response.data!.id ? response.data! : task)
+        prev.map(task => task.id === updateTask.id ? updateTask : task)
+      );
+      toast({
+        title: "Task updated successfully",
+        description: `"${updateTask.name}" has been updated.`,
+      });
+      }
+
+
+  // setTasks((prev) =>
+  //   prev.map((task) =>
+  //     task.id === taskId ? { ...task, status: newStatus } : task
+  //   )
+  // );
+};
+
+
+
+  const handleEditTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsCreatingTask(false);
+    setIsTaskModalOpen(true);
+    // window.location.href = `/task/${task.id}`;
+
+    // navigate(`/task/${task.id}`, { state: { task } });
+  };
+
+  const handleViewTask = (task: Task) => {
+  const column = columns.find(c => c.name === task.status);
+  navigate(`/task/${task.id}`, { state: { task, column } }); // Your intended behavior
+};
+
 
 // const roleMap: Record<UserRole, number> = {
 //   'admin': 1,
@@ -284,7 +415,8 @@ const priorityMap: Record<TaskPriority, number> = {
       const newTask = {
         title: taskData.name,
         description: taskData.description,
-        status_Id: statusMap[taskData.status],
+        // status_Id: statusMap[taskData.status],
+        status_Id: columns.find((col) => col.name === taskData.status)?.id,
         priority_Id: priorityMap[taskData.priority],
         project_Id: taskData.projectId,
         assignor_Id: currentUser.id, // the one creating the task
@@ -323,7 +455,8 @@ const priorityMap: Record<TaskPriority, number> = {
       id: selectedTask.id,
       title: taskData.name,
       description: taskData.description,
-      status_Id: statusMap[taskData.status],
+      // status_Id: statusMap[taskData.status],
+      status_Id: columns.find((col) => col.name === taskData.status)?.id,
       priority_Id: priorityMap[taskData.priority],
       project_Id: taskData.projectId,
       assignee_Id: taskData.assigneeId,
@@ -520,6 +653,7 @@ const handleSaveUser = async (userData: UserFormData) => {
     const projectPayload = {
     project_Name: projectData.name,
     description: projectData.description,
+    productId: projectData.productId,
     startDate: projectData.startDate,
     endDate: projectData.endDate,
     estimatedHours: projectData.estimatedHours,
@@ -580,6 +714,137 @@ const handleSaveUser = async (userData: UserFormData) => {
     setSelectedProject(null);
     setIsCreatingProject(false);
   };
+
+
+
+
+// PRODUCT STUFF
+
+
+    const handleCreateProduct = () => {
+    setSelectedProduct(null);
+    setIsCreatingProduct(true);
+    setIsProductModalOpen(true);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setIsCreatingProduct(false);
+    setIsProductModalOpen(true);
+  };
+
+  const handleDeleteProduct = async (product: Product) => {
+
+    console.log("handleDeleteProduct");
+    // Check if project has tasks
+    // const Productprojects = projects.filter(project => project.productId === product.id);
+    // if (Productprojects.length > 0) {
+    //   toast({
+    //     title: "Cannot delete product",
+    //     description: `This product has ${Productprojects.length} task(s). Please reassign or delete them first.`,
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
+
+
+    const response = await HttpClient.DELETE<Product>(`/api/Product/${product.id}`);
+
+    if (!response.isError && response.data) {
+      const deletedProduct = response.data;
+      setProducts(prev => prev.filter(p => p.id !== deletedProduct.id));
+
+      toast({
+        title: "Product deleted successfully",
+        description: `"${deletedProduct.name || product.name}" has been deleted.`,
+      });
+    }
+
+
+
+    
+    // setProjects(prev => prev.filter(p => p.id !== project.id));
+    // toast({
+    //   title: "Project deleted successfully",
+    //   description: `"${project.name}" has been removed.`,
+    // });
+  };
+
+  const confirmDeleteProduct = (product: Product) => {
+    handleDeleteProduct(product);
+  };
+
+  const handleSaveProduct = async (productData: ProductFormData) => {
+    console.log("handleSaveProduct");
+
+    const productPayload = {
+    name: productData.name,
+    description: productData.description
+    };
+
+    if (isCreatingProduct) {
+
+      console.log("creatingProduct");
+
+    // Create project
+    const response = await HttpClient.POST<Product>('/api/Product', productPayload);
+
+    if (!response.isError && response.data) {
+      // const createdProject = response.data;
+      const createdProduct = response.data;
+      // const createdProject = {
+      //   ...response.data,
+      //   startDate: new Date(response.data.startDate),
+      //   endDate: new Date(response.data.endDate),
+      //   createdAt: new Date(response.data.createdAt),
+      // };
+      setProducts(prev => [...prev, createdProduct]);
+
+      toast({
+        title: "Project created successfully",
+        description: `"${createdProduct.name}" has been created.`,
+      });
+    }
+      
+    } else if (selectedProduct) {
+      // Editing existing project
+
+        console.log("updatingProduct");
+
+      // Update project
+      const response = await HttpClient.PUT<Product>(`/api/Product/${selectedProduct.id}`, productPayload);
+
+      if (!response.isError && response.data) {
+        const updatedProduct = response.data;
+      //   const updatedProduct = {
+      //   ...response.data,
+      //   startDate: new Date(response.data.startDate),
+      //   endDate: new Date(response.data.endDate),
+      //   createdAt: new Date(response.data.createdAt),
+      // };
+        setProducts(prev =>
+          prev.map(product => product.id === updatedProduct.id ? updatedProduct : product)
+        );
+
+        toast({
+          title: "Product updated successfully",
+          description: `"${updatedProduct.name}" has been updated.`,
+        });
+      }
+      
+    }
+    setIsProductModalOpen(false);
+    setSelectedProduct(null);
+    setIsCreatingProduct(false);
+  };
+
+
+
+
+
+
+
+
 
    if (!currentUser || !projects) {
         return <p>Loading...</p>; // Or return a spinner / skeleton
@@ -659,25 +924,23 @@ const handleSaveUser = async (userData: UserFormData) => {
       setIsCreatingHoliday(false);
   };
 
+  const getStatusColor = (status: string) => {
+  const col = columns.find((c) => c.name === status);
+  return col?.color || "#6b7280"; // default gray if not found
+};
+
+
   return (
 
     <div className="min-h-screen bg-background">
-      <header className="border-b">
+      <header className="border-b"> 
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pl-10">
               <TrendingUp className="h-6 w-6 text-primary" />
               <h1 className="text-xl font-bold">Task Management</h1>
             </div>
             <div className="flex items-center gap-4">
-              {/* <UserSelector
-                users={users}
-                selectedUserId={currentUser.id}
-                onSelect={(userId) => {
-                  const user = users.find(u => u.id === userId);
-                  if (user) setCurrentUser(user);
-                }}
-              /> */}
 
               {currentUser && (
                 <div className="flex items-center gap-2 w-full px-3 py-2 border rounded-md">
@@ -735,76 +998,125 @@ const handleSaveUser = async (userData: UserFormData) => {
         </div>
       </header>
 
+      <SidebarProvider>
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="kanban" className="w-full">
-          <TabsList className="flex w-full justify-evenly">
+         <div className="flex">
+
+          {/* Sidebar */}
+          <TaskSidebar
+            currentUser={currentUser}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
+        <div className="flex-1">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          {/* <TabsList className="flex w-full justify-evenly">
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="list">List</TabsTrigger>
             <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
-            {/* <TabsTrigger value="users">Users</TabsTrigger> */}
-            {/* <TabsTrigger value="projects">Projects</TabsTrigger> */}
 
             {['manager', 'admin'].includes(currentUser.role) && (
               <>
                 <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="projects">Projects</TabsTrigger>
+                <TabsTrigger value="products">Products</TabsTrigger>
               </>
             )}
             <TabsTrigger value="holidays">Holidays</TabsTrigger>
-          </TabsList>
+          </TabsList> */}
 
-          {/* <TabsContent value="kanban" className="space-y-4">              
-            <KanbanBoard 
-              tasks={tasks}
-              currentUser={currentUser}
-              onEditTask={handleEditTask}
-            />
-          </TabsContent> */}
-
-
+            
           <TabsContent value="kanban" className="space-y-4">
+            {/* <div className="max-h-[calc(100vh-200px)] overflow-hidden"> */}
             {tasks.length > 0 ? (
               <KanbanBoard 
                 tasks={tasks}
                 currentUser={currentUser}
                 onEditTask={handleEditTask}
                 onView={handleViewTask}
+                onStatusChange={handleStatusChange}
+                columns={columns}
               />
             ) : (
               <p>No tasks found.</p>
             )}
+            {/* </div> */}
           </TabsContent>
 
 
-          <TabsContent value="list" className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                value={taskSearch}
-                onChange={(e) => setTaskSearch(e.target.value)}
-                className="max-w-sm"
-              />
+          <TabsContent value="list" className="space-y-6">
+          {/* Search bar */}
+          <div className="flex items-center gap-2 mb-4">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search tasks..."
+              value={taskSearch}
+              onChange={(e) => setTaskSearch(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+
+          {/* Tasks table */}
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground border rounded-xl">
+              {taskSearch ? "No tasks found matching your search." : "No tasks available."}
             </div>
-            <div className="space-y-4">
-              {filteredTasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {taskSearch ? 'No tasks found matching your search.' : 'No tasks available.'}
-                </div>
-              ) : (
-                filteredTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={handleEditTask}
-                    onView={handleViewTask} 
-                    canEdit={true}
-                  />
-                ))
-              )}
+          ) : (
+            <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[200px]">Title</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTasks.map((task) => (
+                    <TableRow key={task.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell className="font-medium">{task.name}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {task.description || <span className="italic text-gray-400">No description</span>}
+                      </TableCell>
+                      <TableCell>{task.endDate.toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge
+                        style={{
+                          backgroundColor: `${getStatusColor(task.status)}43`,
+                          color: 'black',
+                        }}
+                      >
+                        {task.status}
+                      </Badge>
+
+                      </TableCell>
+                      <TableCell className="text-right flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewTask(task)}
+                        >
+                          <Eye className="h-4 w-4 text-blue-500" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditTask(task)}
+                        >
+                          <Edit className="h-4 w-4 text-green-500" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-          </TabsContent>
+          )}
+        </TabsContent>
+
 
           <TabsContent value="stats" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1076,6 +1388,89 @@ const handleSaveUser = async (userData: UserFormData) => {
             </div>
           </TabsContent>
 
+          <TabsContent value="products" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Product Management</h2>
+              <Button onClick={handleCreateProduct} className="gap-2">
+                <FolderPlus className="h-4 w-4" />
+                Add Product
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2 mb-4">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            
+            <div className="grid gap-4">
+              
+              {filteredProducts.map(product => (
+                <Card key={product.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-medium text-lg">{product.name}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+                            {/* <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground"> */}
+                              {/* <span>Created: {project.createdAt.toLocaleDateString()}</span> */}
+                              {/* <span>Created: {project.createdAt}</span> */}
+                              {/* <span>Created: {project.createdAt.toLocaleDateString()}</span> */}
+                              {/* <span>Tasks: {tasks.filter(t => t.projectId === project.id).length}</span> */}
+                            {/* </div> */}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditProduct(product)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {/* This action cannot be undone. This will permanently delete the project "{product.name}". {projects.filter(t => t.productId === product.id).length > 0 ? 'This product has projects assigned to it and cannot be deleted.' : ''} */}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => confirmDeleteProduct(product)}
+                                    // disabled={products.filter(t => t.productId === product.id).length > 0}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
 
           <TabsContent value="holidays" className="space-y-4">
             <div className="flex items-center justify-between">
@@ -1111,13 +1506,11 @@ const handleSaveUser = async (userData: UserFormData) => {
           </TabsContent>
 
 
-
-
-
-
-
         </Tabs>
+        </div>
+        </div>
       </main>
+      </SidebarProvider>
 
       {currentUser && (
         <TaskModal
@@ -1137,6 +1530,7 @@ const handleSaveUser = async (userData: UserFormData) => {
           holidays={holidays}
           isCreating={isCreatingTask}
           isSaving={savingTask}
+          columns={columns}
         />
       )}
 
@@ -1159,6 +1553,7 @@ const handleSaveUser = async (userData: UserFormData) => {
       <ProjectModal
         project={selectedProject}
         isOpen={isProjectModalOpen}
+        availableProducts={products}
         onClose={() => {
           if (!savingProject) {
             setIsProjectModalOpen(false);
@@ -1170,6 +1565,22 @@ const handleSaveUser = async (userData: UserFormData) => {
         holidays={holidays}
         isCreating={isCreatingProject}
         isSaving={savingProject}
+      />
+
+      <ProductModal
+        product={selectedProduct}
+        isOpen={isProductModalOpen}
+        onClose={() => {
+          if (!savingProduct) {
+            setIsProductModalOpen(false);
+            setSelectedProduct(null);
+            setIsCreatingProduct(false);
+          }
+        }}
+        onSave={handleSaveProduct}
+        holidays={holidays}
+        isCreating={isCreatingProduct}
+        isSaving={savingProduct}
       />
 
       <HolidayModal
@@ -1186,6 +1597,7 @@ const handleSaveUser = async (userData: UserFormData) => {
         isCreating={isCreatingHoliday}
         isSaving={savingHoliday}
       />
+      
     </div>
   );
 }

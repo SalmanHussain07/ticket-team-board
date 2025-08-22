@@ -11,6 +11,7 @@ interface TaskCardProps {
   onEdit: (task: Task) => void;
   onView: (task: Task) => void; 
   canEdit?: boolean;
+  statusMeta: { name: string; color: string }; // extend if needed
 }
 
 const statusConfig = {
@@ -51,7 +52,7 @@ const priorityConfig = {
   }
 };
 
-export function TaskCard({ task, onEdit, onView, canEdit = true }: TaskCardProps) {
+export function TaskCard({ task, onEdit, onView, canEdit = true, statusMeta }: TaskCardProps) {
   console.log("TaskCard rendered", { onView });
   console.log("TaskCard rendered", { onEdit });
   return (
@@ -60,7 +61,7 @@ export function TaskCard({ task, onEdit, onView, canEdit = true }: TaskCardProps
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
             <h3 className="font-semibold text-foreground leading-tight truncate">{task.name}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+            {/* <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p> */}
           </div>
           {canEdit && (
             <Button
@@ -80,9 +81,24 @@ export function TaskCard({ task, onEdit, onView, canEdit = true }: TaskCardProps
       
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary" className={cn("text-xs font-medium", statusConfig[task.status].className)}>
+          {/* <Badge variant="secondary" className={cn("text-xs font-medium", statusConfig[task.status].className)}>
             {statusConfig[task.status].label}
+          </Badge> */}
+          <Badge
+            variant="secondary"
+            className={cn(
+              "text-xs font-medium border",
+              // Apply backend color dynamically
+            )}
+            style={{
+              backgroundColor: `${statusMeta.color}20`, // lighter background
+              // color: statusMeta.color,                  // text color
+              borderColor: statusMeta.color,            // border
+            }}
+          >
+            {statusMeta.name}
           </Badge>
+
           <Badge variant="outline" className={cn("text-xs font-medium", priorityConfig[task.priority].className)}>
             {priorityConfig[task.priority].label}
           </Badge>
