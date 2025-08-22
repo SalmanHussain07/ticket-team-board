@@ -1,50 +1,89 @@
 import { useState } from "react";
-import { Home, Calendar, Package, BarChart3, Settings, KanbanSquare } from "lucide-react";
+import { Calendar, FolderOpen, Users, Package, BarChart3, Settings, LogOut, User, UserCircle } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
+  SidebarRail,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { ProfileModal } from "@/components/ProfileModal";
 
 const items = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "Kanban", url: "/kanban", icon: KanbanSquare },
-  { title: "Products", url: "/products", icon: Package },
-  { title: "Holidays", url: "/holidays", icon: Calendar },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
+  {
+    title: "Dashboard",
+    url: "/",
+    icon: BarChart3,
+  },
+  {
+    title: "Products",
+    url: "/products",
+    icon: Package,
+  },
+  {
+    title: "Holidays",
+    url: "/holidays",
+    icon: Calendar,
+  }
 ];
 
-export function AppSidebar() {
-  const { state } = useSidebar();
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const currentPath = location.pathname;
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  const isActive = (path: string) => currentPath === path;
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-sidebar-accent text-sidebar-primary font-medium" : "hover:bg-sidebar-accent/50";
+  // Mock current user - in real app this would come from auth context
+  const currentUser = {
+    id: '1',
+    name: 'Sarah Johnson',
+    email: 'sarah@company.com',
+    role: 'manager' as const
+  };
+
+  const handleProfileSave = (userData: { name: string; email: string }) => {
+    // In real app, this would update the user in the backend
+    console.log('Profile updated:', userData);
+  };
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <a href="/">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <BarChart3 className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">TaskFlow</span>
+                  <span className="truncate text-xs">Task Management</span>
+                </div>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Task Management</SidebarGroupLabel>
-
+          <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls}>
-                      <item.icon className="mr-2 h-4 w-4" />
+                  <SidebarMenuButton asChild isActive={currentPath === item.url}>
+                    <NavLink to={item.url}>
+                      <item.icon />
                       <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
@@ -54,6 +93,37 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={() => setIsProfileModalOpen(true)}>
+              <UserCircle />
+              <span>Profile</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton>
+              <Settings />
+              <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton>
+              <LogOut />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+
+      <ProfileModal
+        user={currentUser}
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        onSave={handleProfileSave}
+      />
+      <SidebarRail />
     </Sidebar>
   );
 }

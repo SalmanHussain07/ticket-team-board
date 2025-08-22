@@ -28,6 +28,10 @@ export default function Holidays() {
       date: new Date("2024-12-25")
     }
   ]);
+  
+  const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
+  const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
+  const [isCreatingHoliday, setIsCreatingHoliday] = useState(false);
 
   const handleCreateHoliday = (data: HolidayFormData) => {
     const newHoliday: Holiday = {
@@ -37,12 +41,17 @@ export default function Holidays() {
     setHolidays([...holidays, newHoliday]);
   };
 
-  const handleUpdateHoliday = (id: string, data: HolidayFormData) => {
-    setHolidays(holidays.map(holiday => 
-      holiday.id === id 
-        ? { ...holiday, ...data }
-        : holiday
-    ));
+  const handleUpdateHoliday = (data: HolidayFormData) => {
+    if (selectedHoliday) {
+      setHolidays(holidays.map(holiday => 
+        holiday.id === selectedHoliday.id 
+          ? { ...holiday, ...data }
+          : holiday
+      ));
+      setSelectedHoliday(null);
+      setIsHolidayModalOpen(false);
+      toast.success("Holiday updated successfully");
+    }
   };
 
   const handleDeleteHoliday = (id: string) => {
@@ -66,16 +75,36 @@ export default function Holidays() {
         </div>
         
         <HolidayModal
-          mode="create"
+          holiday={null}
+          isOpen={isHolidayModalOpen && isCreatingHoliday}
+          onClose={() => {
+            setIsHolidayModalOpen(false);
+            setIsCreatingHoliday(false);
+          }}
           onSave={handleCreateHoliday}
-          trigger={
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Holiday
-            </Button>
-          }
+          isCreating={true}
         />
+        
+        <Button onClick={() => {
+          setIsCreatingHoliday(true);
+          setIsHolidayModalOpen(true);
+        }}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Holiday
+        </Button>
       </div>
+
+      {/* Edit Holiday Modal */}
+      <HolidayModal
+        holiday={selectedHoliday}
+        isOpen={isHolidayModalOpen && !isCreatingHoliday}
+        onClose={() => {
+          setIsHolidayModalOpen(false);
+          setSelectedHoliday(null);
+        }}
+        onSave={handleUpdateHoliday}
+        isCreating={false}
+      />
 
       <Card>
         <CardHeader>
@@ -123,16 +152,13 @@ export default function Holidays() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <HolidayModal
-                              mode="edit"
-                              holiday={holiday}
-                              onSave={(data) => handleUpdateHoliday(holiday.id, data)}
-                              trigger={
-                                <Button variant="outline" size="sm">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              }
-                            />
+                            <Button variant="outline" size="sm" onClick={() => {
+                              setSelectedHoliday(holiday);
+                              setIsCreatingHoliday(false);
+                              setIsHolidayModalOpen(true);
+                            }}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
                             
                             <AlertDialog>
                               <AlertDialogTrigger asChild>

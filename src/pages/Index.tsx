@@ -14,7 +14,9 @@ import { ProjectModal, ProjectFormData } from "@/components/ProjectModal";
 import { UserSelector } from "@/components/UserSelector";
 import { Reports } from "@/components/Reports";
 import { TaskCard } from "@/components/TaskCard";
-import { Task, TaskFormData, User, Project, Holiday, HolidayFormData } from "@/types/task";
+import { TaskTable } from "@/components/TaskTable";
+import { DueDateAlert } from "@/components/DueDateAlert";
+import { Task, TaskFormData, User, Project, Holiday, HolidayFormData, TaskStatus } from "@/types/task";
 import { HolidayModal } from "@/components/HolidayModal";
 import { Plus, BarChart3, Calendar, Users, TrendingUp, AlertTriangle, UserPlus, Edit, Trash2, FolderPlus, LogOut, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -275,6 +277,18 @@ export default function Index() {
   const handleEditTask = (task: Task) => {
     // Navigate to task details page instead of opening modal
     window.location.href = `/task/${task.id}`;
+  };
+
+  const handleUpdateTaskStatus = (taskId: string, newStatus: TaskStatus) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { ...task, status: newStatus, updatedAt: new Date() }
+        : task
+    ));
+    toast({
+      title: "Task status updated",
+      description: "Task has been moved to " + newStatus.replace('-', ' '),
+    });
   };
 
   const handleSaveTask = async (taskData: TaskFormData) => {
@@ -680,35 +694,16 @@ export default function Index() {
               tasks={tasks}
               currentUser={currentUser}
               onEditTask={handleEditTask}
+              onUpdateTask={handleUpdateTaskStatus}
             />
           </TabsContent>
 
           <TabsContent value="list" className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                value={taskSearch}
-                onChange={(e) => setTaskSearch(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
-            <div className="space-y-4">
-              {filteredTasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {taskSearch ? 'No tasks found matching your search.' : 'No tasks available.'}
-                </div>
-              ) : (
-                filteredTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={handleEditTask}
-                    canEdit={true}
-                  />
-                ))
-              )}
-            </div>
+            <TaskTable
+              tasks={filteredTasks}
+              onEditTask={handleEditTask}
+              canEdit={true}
+            />
           </TabsContent>
 
           <TabsContent value="stats" className="space-y-4">
