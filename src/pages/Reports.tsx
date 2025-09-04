@@ -4,7 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronRight, Search, Filter } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ChevronDown, ChevronRight, Search, Filter, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { Task, User, Project } from '@/types/task';
 import { Product } from '@/types/product';
 
@@ -31,6 +35,17 @@ export default function Reports({ tasks, users, projects, products }: ReportsPro
   const [searchQuery, setSearchQuery] = useState('');
   const [userFilter, setUserFilter] = useState<string>('all');
   const [productFilter, setProductFilter] = useState<string>('all');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+
+  // Filter tasks by date range
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (startDate && task.startDate && new Date(task.startDate) < startDate) return false;
+      if (endDate && task.endDate && new Date(task.endDate) > endDate) return false;
+      return true;
+    });
+  }, [tasks, startDate, endDate]);
 
   // Build hierarchical data structure
   const hierarchyData = useMemo(() => {
@@ -48,7 +63,7 @@ export default function Reports({ tasks, users, projects, products }: ReportsPro
       };
 
       productProjects.forEach(project => {
-        const projectTasks = tasks.filter(task => task.project.id === project.id);
+        const projectTasks = filteredTasks.filter(task => task.project.id === project.id);
         const projectNode: HierarchyNode = {
           type: 'project',
           id: project.id,
@@ -84,7 +99,7 @@ export default function Reports({ tasks, users, projects, products }: ReportsPro
     });
 
     return hierarchy;
-  }, [tasks, users, projects, products]);
+  }, [filteredTasks, users, projects, products]);
 
   // Filter data based on search and filters
   const filteredData = useMemo(() => {
@@ -206,7 +221,7 @@ export default function Reports({ tasks, users, projects, products }: ReportsPro
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Search</label>
               <div className="relative">
@@ -218,6 +233,60 @@ export default function Reports({ tasks, users, projects, products }: ReportsPro
                   className="pl-10"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Start Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "PPP") : <span>Pick start date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">End Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "PPP") : <span>Pick end date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={setEndDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             
             <div className="space-y-2">
