@@ -15,6 +15,7 @@ import { calculateEstimatedHours } from "@/lib/business-days";
 export interface ProjectFormData {
   name: string;
   description: string;
+  productId?: string;
   startDate: Date;
   endDate: Date;
   estimatedHours: number;

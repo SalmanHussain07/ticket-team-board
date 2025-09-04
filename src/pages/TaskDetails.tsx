@@ -65,6 +65,7 @@ export default function TaskDetails() {
       id: '1',
       name: 'E-commerce Platform',
       description: 'Main e-commerce platform development',
+      productId: '1',
       startDate: new Date('2024-01-01'),
       endDate: new Date('2024-06-30'),
       estimatedHours: 960,

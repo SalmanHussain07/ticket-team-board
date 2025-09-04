@@ -25,6 +25,11 @@ const items = [
     icon: BarChart3,
   },
   {
+    title: "Reports",
+    url: "/reports",
+    icon: BarChart3,
+  },
+  {
     title: "Products",
     url: "/products",
     icon: Package,

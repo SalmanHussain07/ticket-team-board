@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import TaskDetails from "./pages/TaskDetails";
 import Products from "./pages/Products";
 import Holidays from "./pages/Holidays";
+import ReportsWrapper from "./pages/ReportsWrapper";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
                   <Route path="/task/:id" element={<TaskDetails />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/holidays" element={<Holidays />} />
+                  <Route path="/reports" element={<ReportsWrapper />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

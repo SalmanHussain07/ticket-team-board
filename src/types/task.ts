@@ -15,6 +15,7 @@ export interface Project {
   id: string;
   name: string;
   description: string;
+  productId: string;
   startDate: Date;
   endDate: Date;
   estimatedHours: number;
