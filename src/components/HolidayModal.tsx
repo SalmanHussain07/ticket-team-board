@@ -3,11 +3,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Holiday, HolidayFormData } from "@/types/task";
 
 interface HolidayModalProps {
@@ -19,24 +14,37 @@ interface HolidayModalProps {
   isSaving?: boolean;
 }
 
+interface HolidayFormErrors {
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export function HolidayModal({ holiday, isOpen, onClose, onSave, isCreating, isSaving = false }: HolidayModalProps) {
   const [formData, setFormData] = useState<HolidayFormData>({
     name: '',
-    date: new Date()
+    // date: new Date(),
+    startDate: new Date(),
+    endDate: new Date()
   });
-  const [errors, setErrors] = useState<Partial<HolidayFormData>>({});
+  // const [errors, setErrors] = useState<Partial<HolidayFormData>>({});
+  const [errors, setErrors] = useState<HolidayFormErrors>({});
 
   useEffect(() => {
     if (isOpen) {
       if (holiday && !isCreating) {
         setFormData({
           name: holiday.name,
-          date: holiday.date
+          // date: holiday.date,
+          startDate: holiday.startDate,
+          endDate: holiday.endDate
         });
       } else {
         setFormData({
           name: '',
-          date: new Date()
+          // date: new Date(),
+          startDate: new Date(),
+          endDate: new Date()
         });
       }
       setErrors({});
@@ -44,10 +52,15 @@ export function HolidayModal({ holiday, isOpen, onClose, onSave, isCreating, isS
   }, [isOpen, holiday, isCreating]);
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<HolidayFormData> = {};
+    // const newErrors: Partial<HolidayFormData> = {};
+    const newErrors: HolidayFormErrors = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Holiday name is required';
+    }
+
+    if (formData.endDate < formData.startDate) {
+      newErrors.endDate = "End date cannot be before start date";
     }
 
     setErrors(newErrors);
@@ -72,7 +85,7 @@ export function HolidayModal({ holiday, isOpen, onClose, onSave, isCreating, isS
             {isCreating ? 'Add a new gazetted holiday to the system.' : 'Edit holiday details.'}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="name">Holiday Name</Label>
@@ -81,35 +94,36 @@ export function HolidayModal({ holiday, isOpen, onClose, onSave, isCreating, isS
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter holiday name"
+              required
             />
             {errors.name && <span className="text-sm text-destructive">{errors.name}</span>}
           </div>
 
           <div className="grid gap-2">
-            <Label>Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal",
-                    !formData.date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.date ? format(formData.date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={formData.date}
-                  onSelect={(date) => date && setFormData({ ...formData, date })}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="grid gap-2">
+              <Label>Start Date</Label>
+              <Input
+                type="date"
+                value={formData.startDate.toISOString().split("T")[0]}
+                onChange={(e) =>
+                  setFormData({ ...formData, startDate: new Date(e.target.value) })
+                }
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label>End Date</Label>
+              <Input
+                type="date"
+                value={formData.endDate.toISOString().split("T")[0]}
+                onChange={(e) =>
+                  setFormData({ ...formData, endDate: new Date(e.target.value) })
+                }
+              />
+              {errors.endDate && <span className="text-sm text-destructive">{errors.endDate}</span>}
+            </div>
+
+
           </div>
         </div>
 

@@ -7,28 +7,31 @@ export interface Column {
   name: string;
   description: string;
   color: string; // e.g., "bg-blue-500"
+  sortOrder: number;
 }
-// export type UserRole = 'admin' | 'manager' | 'developer';
+
 
 export interface UserRole {
   id: number;
   name: string;  // e.g., "admin"
+  isManager: boolean;
 }
 
-// export interface User {
-//   id: string;
-//   name: string;
-//   role: UserRole;
-//   email: string;
-// }
+export interface Manager {
+  managerId: string;
+  managerName: string;
+}
 
 export interface User {
   id: string;
   name: string;
   full_name: string;
   role: string;
+  isManager: boolean;
   email: string;
   created_at: string;
+  managerId?: string | null;
+  managerName?: string | null;
 }
 
 export interface Project {
@@ -48,18 +51,6 @@ export interface Product {
   description: string;
 }
 
-// export interface Task {
-//   id: string;
-//   name: string;
-//   description: string;
-//   status: TaskStatus;
-//   priority: TaskPriority;
-//   reporter: User;
-//   assignee: User | null;
-//   project: Project;
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
 
 export interface Task {
   id: string;
@@ -107,10 +98,34 @@ export interface TaskFormData {
 export interface Holiday {
   id: string;
   name: string;
-  date: Date;
+  startDate: Date;
+  endDate: Date;
 }
 
 export interface HolidayFormData {
   name: string;
-  date: Date;
+  startDate: Date;
+  endDate: Date;
+}
+
+
+export interface Comment {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  comment: string;
+  hours: number;
+  commentedAt: Date;
+}
+
+export interface TimeLog {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  description: string;
+  hours: number;
+  workDate: Date;
+  loggedAt: Date;
 }

@@ -8,13 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Task, TaskFormData, TaskPriority, User, UserRole, Project, Holiday, KanbanColumn, Column } from "@/types/task";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
 import { Save, X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isDateRangeWithin, calculateEstimatedHours, calculateBusinessDays } from "@/lib/business-days";
+
 
 interface TaskModalProps {
   task: Task | null;
@@ -28,7 +26,17 @@ interface TaskModalProps {
   isCreating?: boolean;
   isSaving?: boolean;
   columns: Column[]; // pass columns as a prop
+  roles: UserRole[];
 }
+
+type TaskFormErrors = {
+  name?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  // add other fields if needed
+};
+
 
 const statusOptions: { value: string; label: string }[] = [
   { value: 'todo', label: 'To Do' },
@@ -44,18 +52,19 @@ const priorityOptions: { value: TaskPriority; label: string }[] = [
   { value: 'urgent', label: 'Urgent' }
 ];
 
-export function TaskModal({ 
-  task, 
-  isOpen, 
-  onClose, 
-  onSave, 
-  currentUser, 
+export function TaskModal({
+  task,
+  isOpen,
+  onClose,
+  onSave,
+  currentUser,
   availableUsers,
   availableProjects,
   holidays,
   isCreating = false,
   isSaving = false,
-  columns
+  columns,
+  roles
 }: TaskModalProps) {
   const [formData, setFormData] = useState<TaskFormData>({
     name: '',
@@ -69,14 +78,16 @@ export function TaskModal({
     estimatedHours: 0
   });
 
-  const [errors, setErrors] = useState<Partial<TaskFormData>>({});
+  // const [errors, setErrors] = useState<Partial<TaskFormData>>({});
+  const [errors, setErrors] = useState<TaskFormErrors>({});
+
 
   useEffect(() => {
-  if (formData.startDate && formData.endDate && formData.endDate >= formData.startDate) {
-    const estimatedHours = calculateEstimatedHours(formData.startDate, formData.endDate, holidays);
-    setFormData(prev => ({ ...prev, estimatedHours }));
-  }
-}, [formData.startDate, formData.endDate, holidays]);
+    if (formData.startDate && formData.endDate && formData.endDate >= formData.startDate) {
+      const estimatedHours = calculateEstimatedHours(formData.startDate, formData.endDate, holidays);
+      setFormData(prev => ({ ...prev, estimatedHours }));
+    }
+  }, [formData.startDate, formData.endDate, holidays]);
 
   useEffect(() => {
     if (task) {
@@ -94,7 +105,7 @@ export function TaskModal({
     } else if (isCreating) {
       const defaultStartDate = new Date();
       const defaultEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      
+
       setFormData({
         name: '',
         description: '',
@@ -110,17 +121,43 @@ export function TaskModal({
     setErrors({});
   }, [task, isCreating, isOpen]);
 
-  const canEditAllFields = ['manager', 'admin'].includes(currentUser.role);
-  const canEditLimitedFields = currentUser.role === 'developer';
+  const userRole = roles.find(r => r.name === currentUser.role);
 
+  // const canEditAllFields = ['manager', 'admin'].includes(currentUser.role);
+  // const canEditLimitedFields = currentUser.role === 'developer';
+  const canEditAllFields = !!currentUser?.isManager;
+  const canEditLimitedFields = !currentUser?.isManager;
+
+  // Validation
   const validateForm = (): boolean => {
-    const newErrors: Partial<TaskFormData> = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Task name is required';
+    // const newErrors: Partial<TaskFormData> = {};
+    const newErrors: TaskFormErrors = {};
+
+    if (!formData.name?.trim()) {
+      newErrors.name = "Task name is required";
     }
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
+
+    if (!formData.description?.trim()) {
+      newErrors.description = "Description is required";
+    }
+
+    if (!formData.startDate) {
+      newErrors.startDate = "Start date is required";
+    }
+
+    if (!formData.endDate) {
+      newErrors.endDate = "End date is required";
+    }
+
+    if (formData.startDate && formData.endDate) {
+      if (formData.startDate > formData.endDate) {
+        newErrors.endDate = "End date must be after start date";
+      }
+
+      const project = availableProjects.find(p => p.id === formData.projectId);
+      if (project && !isDateRangeWithin(formData.startDate, formData.endDate, project.startDate, project.endDate)) {
+        newErrors.endDate = "Dates must be within project range";
+      }
     }
 
     setErrors(newErrors);
@@ -129,13 +166,30 @@ export function TaskModal({
 
   const handleSave = () => {
     if (!validateForm()) return;
+
+    // ✅ validate date range before closing
+    const selectedProject = availableProjects.find(p => p.id === formData.projectId);
+    if (
+      selectedProject &&
+      !isDateRangeWithin(
+        formData.startDate,
+        formData.endDate,
+        selectedProject.startDate,
+        selectedProject.endDate
+      )
+    ) {
+      // you already show a toast elsewhere, so just stop here
+      return; // don't close the dialog
+    }
+
     onSave(formData);
-    onClose();
+    onClose(); // only close if everything is valid
   };
+
 
   const canEdit = (field: keyof TaskFormData): boolean => {
     if (canEditAllFields) return true;
-    if (canEditLimitedFields && (field === 'status' || field === 'assigneeId')) return true;
+    if (canEditLimitedFields && (field === 'status')) return true;
     return false;
   };
 
@@ -235,12 +289,7 @@ export function TaskModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* {statusOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))} */}
-                  {columns.length === 0 ? (
+                  {/* {columns.length === 0 ? (
                   <SelectItem value="loading" disabled>
                     Loading statuses...
                   </SelectItem>
@@ -250,7 +299,15 @@ export function TaskModal({
                       {option.name}
                     </SelectItem>
                   ))
-                )}
+                )} */}
+
+                  {
+                    columns.map(option => (
+                      <SelectItem key={option.name} value={option.name}>
+                        {option.name}
+                      </SelectItem>
+                    ))
+                  }
 
                 </SelectContent>
               </Select>
@@ -293,8 +350,14 @@ export function TaskModal({
             <Select
               value={formData.assigneeId || 'unassigned'}
               onValueChange={(value) => setFormData(prev => ({ ...prev, assigneeId: value === 'unassigned' ? null : value }))}
-              disabled={!canEdit('assigneeId')}
+              disabled={!canEdit('assigneeId') || (task && currentUser.id !== task.assignorId)}
             >
+              {currentUser.id !== task?.assignorId && (
+                <p className="text-xs text-muted-foreground">
+                  Only the reporter/task creator can edit this field.
+                </p>
+              )}
+
               <SelectTrigger>
                 <SelectValue placeholder="Select assignee..." />
               </SelectTrigger>
@@ -335,122 +398,49 @@ export function TaskModal({
                 </Avatar>
                 <span className="font-medium">{task.assignor}</span>
                 <Badge variant="outline" className="text-xs">
-                  {task.assignorRole} 
+                  {task.assignorRole}
                 </Badge>
               </div>
             </div>
           )}
 
-          {/* Date Range and Hours */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Start Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal",
-                      !formData.startDate && "text-muted-foreground"
-                    )}
-                    disabled={!canEdit('startDate')}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.startDate ? format(formData.startDate, "PPP") : <span>Pick start date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.startDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        // Validate against project dates
-                        const selectedProject = availableProjects.find(p => p.id === formData.projectId);
-                        if (selectedProject) {
-                          if (!isDateRangeWithin(date, formData.endDate, selectedProject.startDate, selectedProject.endDate)) {
-                            // Show warning but allow the change
-                            console.warn('Task dates should be within project range');
-                          }
-                        }
-                        setFormData(prev => ({ ...prev, startDate: date }));
-                      }
-                    }}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">End Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal",
-                      !formData.endDate && "text-muted-foreground"
-                    )}
-                    disabled={!canEdit('endDate')}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.endDate ? format(formData.endDate, "PPP") : <span>Pick end date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.endDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        // Validate against project dates
-                        const selectedProject = availableProjects.find(p => p.id === formData.projectId);
-                        if (selectedProject) {
-                          if (!isDateRangeWithin(formData.startDate, date, selectedProject.startDate, selectedProject.endDate)) {
-                            // Show warning but allow the change
-                            console.warn('Task dates should be within project range');
-                          }
-                        }
-                        setFormData(prev => ({ ...prev, endDate: date }));
-                      }
-                    }}
-                    disabled={(date) => date < formData.startDate}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* <div className="space-y-2">
-              <Label htmlFor="hours" className="text-sm font-medium">Hours</Label>
+              <Label>Start Date</Label>
               <Input
-                id="hours"
-                type="number"
-                min="0.5"
-                step="0.5"
-                value={formData.estimatedHours}
-                onChange={(e) => setFormData(prev => ({ ...prev, hours: parseFloat(e.target.value) || 0 }))}
-                disabled={!canEdit('estimatedHours')}
-                placeholder="Enter hours"
+                type="date"
+                value={formData.startDate ? format(formData.startDate, "yyyy-MM-dd") : ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value ? new Date(e.target.value) : undefined }))}
+                disabled={!canEdit("startDate")}  // disable based on role
               />
-            </div> */}
+              {errors.startDate && <p className="text-sm text-red-500">{errors.startDate}</p>}
+            </div>
 
             <div className="space-y-2">
-            <Label htmlFor="estimatedHours" className="text-sm font-medium">Estimated Hours</Label>
-            <Input
-              id="estimatedHours"
-              type="number"
-              value={formData.estimatedHours}
-              readOnly
-              className="bg-muted"
-              placeholder="Calculated automatically"
-            />
-            <span className="text-sm text-muted-foreground">
-              Based on {calculateBusinessDays(formData.startDate, formData.endDate, holidays)} working days
-            </span>
+              <Label>End Date</Label>
+              <Input
+                type="date"
+                value={formData.endDate ? format(formData.endDate, "yyyy-MM-dd") : ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value ? new Date(e.target.value) : undefined }))}
+                min={formData.startDate ? format(formData.startDate, "yyyy-MM-dd") : undefined}
+                disabled={!canEdit("endDate")}  // ✅ disable based on role
+              />
+              {errors.endDate && <p className="text-sm text-red-500">{errors.endDate}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="estimatedHours" className="text-sm font-medium">Estimated Hours</Label>
+              <Input
+                id="estimatedHours"
+                type="number"
+                value={formData.estimatedHours}
+                readOnly
+                className="bg-muted"
+                placeholder="Calculated automatically"
+              />
+              <span className="text-sm text-muted-foreground">
+                Based on {calculateBusinessDays(formData.startDate, formData.endDate, holidays)} working days
+              </span>
             </div>
           </div>
 
@@ -461,7 +451,7 @@ export function TaskModal({
               return (
                 <div className="p-3 border border-yellow-200 bg-yellow-50 rounded-lg">
                   <p className="text-sm text-yellow-800">
-                    <strong>Warning:</strong> Task dates should be within project range ({format(selectedProject.startDate, "PPP")} - {format(selectedProject.endDate, "PPP")})
+                    <strong>Error:</strong> Task dates should be within project range ({format(selectedProject.startDate, "PPP")} - {format(selectedProject.endDate, "PPP")})
                   </p>
                 </div>
               );
@@ -473,7 +463,7 @@ export function TaskModal({
           {!canEditAllFields && (
             <div className="p-3 border border-blue-200 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>Developer Role:</strong> You can only edit Status and Assignee fields.
+                You can only edit Status.
               </p>
             </div>
           )}

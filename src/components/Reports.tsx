@@ -13,21 +13,49 @@ interface ReportsProps {
 
 export const Reports = ({ tasks, users }: ReportsProps) => {
   // Task completion trend (mock data for last 7 days)
-  const completionTrend = [
-    { day: 'Mon', completed: 3, created: 5 },
-    { day: 'Tue', completed: 2, created: 3 },
-    { day: 'Wed', completed: 4, created: 2 },
-    { day: 'Thu', completed: 1, created: 4 },
-    { day: 'Fri', completed: 5, created: 3 },
-    { day: 'Sat', completed: 2, created: 1 },
-    { day: 'Sun', completed: 3, created: 2 }
-  ];
+  // const completionTrend = [
+  //   { day: 'Mon', completed: 3, created: 5 },
+  //   { day: 'Tue', completed: 2, created: 3 },
+  //   { day: 'Wed', completed: 4, created: 2 },
+  //   { day: 'Thu', completed: 1, created: 4 },
+  //   { day: 'Fri', completed: 5, created: 3 },
+  //   { day: 'Sat', completed: 2, created: 1 },
+  //   { day: 'Sun', completed: 3, created: 2 }
+  // ];
+
+  // Task completion trend (real data for last 7 days)
+  const today = new Date();
+  const last7Days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - i)); // oldest → newest
+    return d;
+  });
+
+  const completionTrend = last7Days.map((date) => {
+    const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
+
+    const dayTasks = tasks.filter((task) => {
+      const createdDate = new Date(task.created_at);
+      return (
+        createdDate.getFullYear() === date.getFullYear() &&
+        createdDate.getMonth() === date.getMonth() &&
+        createdDate.getDate() === date.getDate()
+      );
+    });
+
+    return {
+      day: dayName,
+      created: dayTasks.length,
+      completed: dayTasks.filter((t) => t.status.toLowerCase() === "done").length,
+    };
+  });
+
 
   // Tasks by assignee
   const assigneeData = users.map(user => ({
     name: user.name,
-    tasks: tasks.filter(task => task.assignee?.id === user.id).length,
-    completed: tasks.filter(task => task.assignee?.id === user.id && task.status === 'done').length
+    tasks: tasks.filter(task => task.assigneeId === user.id).length,
+    completed: tasks.filter(task => task.assigneeId === user.id && task.status === 'done').length
   })).filter(item => item.tasks > 0);
 
   // Priority distribution for pie chart
@@ -141,17 +169,17 @@ export const Reports = ({ tasks, users }: ReportsProps) => {
                   <XAxis dataKey="day" />
                   <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="completed" 
-                    stroke="hsl(var(--primary))" 
+                  <Line
+                    type="monotone"
+                    dataKey="completed"
+                    stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     dot={{ fill: "hsl(var(--primary))" }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="created" 
-                    stroke="hsl(var(--muted-foreground))" 
+                  <Line
+                    type="monotone"
+                    dataKey="created"
+                    stroke="hsl(var(--muted-foreground))"
                     strokeWidth={2}
                     strokeDasharray="5 5"
                     dot={{ fill: "hsl(var(--muted-foreground))" }}
@@ -190,8 +218,8 @@ export const Reports = ({ tasks, users }: ReportsProps) => {
             <div className="flex flex-wrap gap-2 mt-4">
               {priorityData.map((item) => (
                 <div key={item.name} className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
+                  <div
+                    className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
                   <span className="text-sm">{item.name}: {item.value}</span>
@@ -222,6 +250,7 @@ export const Reports = ({ tasks, users }: ReportsProps) => {
           </CardContent>
         </Card>
 
+        {/* Team Workload */}
         <Card>
           <CardHeader>
             <CardTitle>Team Workload</CardTitle>
@@ -229,72 +258,46 @@ export const Reports = ({ tasks, users }: ReportsProps) => {
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={assigneeData} layout="horizontal">
+                <BarChart
+                  data={users
+                    .map(user => {
+                      const total = tasks.filter(task => task.assigneeId === user.id).length;
+                      const completed = tasks.filter(
+                        task => task.assigneeId === user.id && task.status === "done"
+                      ).length;
+                      return {
+                        name: user.name,
+                        completed,
+                        remaining: total - completed,
+                      };
+                    })
+                    .filter(item => item.completed + item.remaining > 0)}
+                  layout="vertical"
+                >
                   <XAxis type="number" />
                   <YAxis dataKey="name" type="category" width={80} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="completed" fill="hsl(var(--primary-foreground))" radius={[0, 4, 4, 0]} />
+                  {/* Remaining tasks (gray background) */}
+                  <Bar
+                    dataKey="remaining"
+                    stackId="a"
+                    fill="hsl(var(--muted-foreground))"
+                    radius={[0, 4, 4, 0]}
+                  />
+                  {/* Completed tasks (blue foreground) */}
+                  <Bar
+                    dataKey="completed"
+                    stackId="a"
+                    fill="hsl(var(--primary))"
+                    radius={[0, 4, 4, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
+
       </div>
-
-      {/* Team Performance Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Performance Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {users.map(user => {
-              const userTasks = tasks.filter(task => task.assignee?.id === user.id);
-              const completedTasks = userTasks.filter(task => task.status === 'done').length;
-              const inProgressTasks = userTasks.filter(task => task.status === 'in-progress').length;
-              const userCompletionRate = userTasks.length > 0 ? Math.round((completedTasks / userTasks.length) * 100) : 0;
-
-              return (
-                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-sm font-medium">
-                        {user.name.split(' ').map(n => n[0]).join('')}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.role}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground">Total</p>
-                      <p className="font-medium">{userTasks.length}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground">Completed</p>
-                      <p className="font-medium">{completedTasks}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground">In Progress</p>
-                      <p className="font-medium">{inProgressTasks}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground">Rate</p>
-                      <Badge variant={userCompletionRate >= 70 ? "default" : "secondary"}>
-                        {userCompletionRate}%
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

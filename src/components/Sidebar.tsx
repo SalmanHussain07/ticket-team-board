@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderKanban, List, BarChart3, FileBarChart, Users, Folder, Package, Calendar } from "lucide-react";
+import { FolderKanban, List, BarChart3, FileBarChart, Users, Folder, Package, Calendar, Activity, Layers } from "lucide-react";
 import {
   Sidebar,
   SidebarTrigger,
@@ -11,40 +11,50 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { UserRole } from "@/types/task";
+import { User } from "@/types/task";
 
 interface TaskSidebarProps {
-  currentUser: { role: string };
+  currentUser: User;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  roles: UserRole[];
 }
 
-export function TaskSidebar({ currentUser, activeTab, onTabChange }: TaskSidebarProps) {
+export function TaskSidebar({ currentUser, activeTab, onTabChange, roles }: TaskSidebarProps) {
   const baseItems = [
     { title: "Kanban", value: "kanban", icon: FolderKanban },
     { title: "List", value: "list", icon: List },
-    { title: "Stats", value: "stats", icon: BarChart3 },
-    { title: "Reports", value: "reports", icon: FileBarChart },
+    // { title: "Stats", value: "stats", icon: BarChart3 },
+    { title: "Stats", value: "reports", icon: BarChart3 },
+    { title: "Task Report", value: "hourlyreport", icon: FileBarChart }
   ];
 
   const managerAdminItems = [
     { title: "Users", value: "users", icon: Users },
     { title: "Projects", value: "projects", icon: Folder },
     { title: "Products", value: "products", icon: Package },
+    { title: "Statuses", value: "status", icon: Activity },
+    { title: "Roles", value: "roles", icon: Layers },
+    { title: "Full Report", value: "fullreport", icon: FileBarChart },
   ];
 
   const finalItems = [
     { title: "Holidays", value: "holidays", icon: Calendar },
   ];
 
+  // const userRole = roles.find(r => r.name === currentUser.role);
+
   const items = [
     ...baseItems,
-    ...(["manager", "admin"].includes(currentUser.role) ? managerAdminItems : []),
+    ...(currentUser.isManager ? managerAdminItems : []),
     ...finalItems,
   ];
 
+
   const getNavCls = (isActive: boolean) =>
     isActive
-      ? "bg-sidebar-accent text-sidebar-primary font-medium"
+      ? "bg-gray-300 text-sidebar-primary font-medium"
       : "hover:bg-sidebar-accent/50";
 
   return (
@@ -57,8 +67,8 @@ export function TaskSidebar({ currentUser, activeTab, onTabChange }: TaskSidebar
       {/* Sidebar itself */}
       <Sidebar collapsible="icon">
         <div className="p-2 border-b">
-        <SidebarTrigger />
-      </div>
+          <SidebarTrigger />
+        </div>
         <SidebarContent>
           <SidebarGroup>
             {/* <SidebarGroupLabel>Task Management</SidebarGroupLabel> */}
